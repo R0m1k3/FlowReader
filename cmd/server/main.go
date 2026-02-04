@@ -11,27 +11,26 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/michael/flowreader/internal/config"
+	"github.com/michael/flowreader/internal/database"
 )
 
 func main() {
-	// Load configuration from environment
-	port := getEnv("PORT", "8080")
-	dbURL := getEnv("DATABASE_URL", "postgres://flowreader:flowreader@db:5432/flowreader?sslmode=disable")
+	// Load configuration
+	cfg := config.Load()
 
 	// Initialize database connection pool
 	ctx := context.Background()
-	pool, err := pgxpool.New(ctx, dbURL)
+	pool, err := database.Connect(ctx, cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalf("Unable to create connection pool: %v", err)
+		log.Fatalf("Database connection failed: %v", err)
 	}
 	defer pool.Close()
 
-	// Verify database connection
-	if err := pool.Ping(ctx); err != nil {
-		log.Fatalf("Unable to ping database: %v", err)
+	// Check migrations status (warning only, doesn't block)
+	if err := database.RunMigrations(ctx, pool); err != nil {
+		log.Printf("Migration check warning: %v", err)
 	}
-	log.Println("Connected to database")
 
 	// Initialize router
 	r := chi.NewRouter()
@@ -65,7 +64,7 @@ func main() {
 
 	// Create server
 	srv := &http.Server{
-		Addr:         ":" + port,
+		Addr:         ":" + cfg.Port,
 		Handler:      r,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
@@ -74,7 +73,7 @@ func main() {
 
 	// Graceful shutdown
 	go func() {
-		log.Printf("Server starting on port %s", port)
+		log.Printf("Server starting on port %s", cfg.Port)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Server failed: %v", err)
 		}
@@ -94,12 +93,4 @@ func main() {
 	}
 
 	log.Println("Server exited properly")
-}
-
-// getEnv returns the value of an environment variable or a default value
-func getEnv(key, defaultValue string) string {
-	if value, exists := os.LookupEnv(key); exists {
-		return value
-	}
-	return defaultValue
 }
