@@ -37,8 +37,8 @@ development_status:
   # Epic 1: Walking Skeleton & User Access
   epic-1: in-progress
   1-1-project-initialization-walking-skeleton: done
-  1-2-database-migration-system: review
-  1-3-user-registration-api: backlog
+  1-2-database-migration-system: done
+  1-3-user-registration-api: review
   1-4-session-authentication: backlog
   1-5-frontend-auth-foundation: backlog
   epic-1-retrospective: optional

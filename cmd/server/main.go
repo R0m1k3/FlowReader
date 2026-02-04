@@ -13,6 +13,9 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/michael/flowreader/internal/config"
 	"github.com/michael/flowreader/internal/database"
+	"github.com/michael/flowreader/internal/handler"
+	"github.com/michael/flowreader/internal/repository"
+	"github.com/michael/flowreader/internal/service"
 )
 
 func main() {
@@ -32,6 +35,15 @@ func main() {
 		log.Printf("Migration check warning: %v", err)
 	}
 
+	// Initialize repositories
+	userRepo := repository.NewUserRepository(pool)
+
+	// Initialize services
+	authService := service.NewAuthService(userRepo)
+
+	// Initialize handlers
+	authHandler := handler.NewAuthHandler(authService)
+
 	// Initialize router
 	r := chi.NewRouter()
 
@@ -44,7 +56,6 @@ func main() {
 
 	// Health check endpoint
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		// Check database connection
 		if err := pool.Ping(r.Context()); err != nil {
 			http.Error(w, "Database connection failed", http.StatusServiceUnavailable)
 			return
@@ -54,11 +65,16 @@ func main() {
 		w.Write([]byte(`{"status":"ok","service":"flowreader"}`))
 	})
 
-	// API routes placeholder
+	// API routes
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.Write([]byte(`{"message":"FlowReader API v1"}`))
+		})
+
+		// Auth routes
+		r.Route("/auth", func(r chi.Router) {
+			r.Post("/register", authHandler.Register)
 		})
 	})
 
