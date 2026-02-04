@@ -64,15 +64,19 @@ export function DashboardPage({ selectedFeedId }: DashboardPageProps) {
                                 {selectedFeedId ? 'Archives du Flux' : 'La Une'}
                             </h1>
                         </div>
-                        <div className="flex flex-col items-end gap-3 text-right">
-                            <div>
-                                <p className="text-paper-muted text-xs font-serif italic">Mercredi 4 Février 2026</p>
-                                <p className="text-[10px] text-paper-muted/30 uppercase tracking-widest font-black mt-1">Volume IX • No. 42</p>
+                        <div className="flex flex-col items-center gap-4 text-center">
+                            <div className="flex flex-col items-center">
+                                <p className="text-gold text-sm font-serif italic font-bold tracking-wide">
+                                    {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                                </p>
+                                <p className="text-[10px] text-paper-muted opacity-80 uppercase tracking-[0.25em] font-black mt-1">
+                                    Volume IX • No. 42
+                                </p>
                             </div>
                             <button
                                 onClick={() => refreshMutation.mutate()}
                                 disabled={refreshMutation.isPending}
-                                className={`text-[10px] uppercase tracking-[0.2em] font-bold px-4 py-2 rounded-full border border-gold/20 text-gold hover:bg-gold/10 transition-all ${refreshMutation.isPending ? 'animate-pulse' : ''}`}
+                                className={`text-[10px] uppercase tracking-[0.2em] font-bold px-6 py-2.5 rounded-full border border-gold/30 text-gold hover:bg-gold hover:text-carbon transition-all duration-300 ${refreshMutation.isPending ? 'animate-pulse opacity-50' : 'hover:shadow-lg hover:shadow-gold/20'}`}
                             >
                                 {refreshMutation.isPending ? 'Mise à jour...' : 'Mettre à jour'}
                             </button>
