@@ -1,0 +1,39 @@
+# Binaries
+/bin
+/dist
+/build
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Object Files
+*.o
+
+# Editors
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+
+# Project Local
+.env
+.DS_Store
+Thumbs.db
+task.md
+
+# Go
+vendor/
+go.sum
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# FlowReader Specific
+/_bmad-output/tmp/
