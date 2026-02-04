@@ -39,7 +39,7 @@ export function Sidebar({ onSelectFeed, selectedFeedId }: SidebarProps) {
             <aside className="w-72 bg-carbon-dark/50 backdrop-blur-xl border-r border-white/5 h-screen flex flex-col z-20">
                 <div className="p-8 pb-4">
                     <div className="flex items-center justify-between mb-8">
-                        <h1 className="text-gold text-2xl font-serif italic tracking-tight">FlowReader</h1>
+                        <img src="/logo.png" alt="FlowReader" className="h-12 w-auto object-contain" />
                         <button
                             onClick={() => setIsAddModalOpen(true)}
                             className="w-8 h-8 flex items-center justify-center rounded-full border border-gold/20 text-gold hover:bg-gold hover:text-carbon transition-all duration-300 shadow-sm"
@@ -53,7 +53,7 @@ export function Sidebar({ onSelectFeed, selectedFeedId }: SidebarProps) {
                         <button
                             onClick={() => onSelectFeed(null)}
                             className={`w-full group flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-300 ${selectedFeedId === null
-                                ? 'bg-gold/10 text-gold-bright shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]'
+                                ? 'bg-gold/20 text-yellow-700 shadow-sm border border-gold/20'
                                 : 'text-paper-muted hover:text-gold hover:bg-gold/5'
                                 }`}
                         >
