@@ -11,7 +11,63 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
     const timeToRead = Math.ceil((article.content?.length || 500) / 1000) + 1;
 
     return (
-        <article className="magazine-card group cursor-pointer flex flex-col h-full shadow-xl shadow-paper-muted/20 hover:shadow-2xl hover:shadow-gold/20 transition-all duration-500 rounded-xl border border-transparent hover:border-gold/10" onClick={() => onClick(article)}>
+        <article className="magazine-card group cursor-pointer flex flex-col h-full relative overflow-visible shadow-xl shadow-paper-muted/20 hover:shadow-2xl hover:shadow-gold/20 transition-all duration-500 rounded-xl border border-transparent hover:border-gold/10" onClick={() => onClick(article)}>
+
+            {/* Unread Ribbon - "Paper Corner" Effect */}
+            {!article.is_read && (
+                <div className="absolute -top-1.5 -right-1.5 z-50 w-24 h-24 overflow-hidden pointer-events-none">
+                    {/* The darker 'fold' triangle behind */}
+                    <div className="absolute top-0 left-0 w-2 h-2 bg-yellow-900 rotate-45 transform translate-x-12 translate-y-[-4px]"></div>
+                    <div className="absolute bottom-0 right-0 w-2 h-2 bg-yellow-900 rotate-45 transform translate-x-[4px] translate-y-[-12px]"></div>
+
+                    {/* The Ribbon */}
+                    <div className="absolute top-0 right-0 bg-gold text-carbon text-[10px] font-black uppercase tracking-widest py-1.5 w-32 text-center transform translate-x-[30%] translate-y-[45%] rotate-45 shadow-md border-b-[1px] border-white/20">
+                        Non Lu
+                    </div>
+                    {/* Corner fold simulation (triangle darker) */}
+                    <div className="absolute top-0 right-0 w-1.5 h-1.5 bg-yellow-800/80"></div>
+                    <div className="absolute bottom-[5.5rem] right-0 w-1.5 h-1.5 bg-yellow-800/80"></div>
+                </div>
+            )}
+            {!article.is_read && (
+                <>
+                    {/* Top Triangle Fold */}
+                    <div className="absolute -top-1.5 right-[5.25rem] w-1.5 h-1.5 bg-yellow-800 z-40 transform skew-x-45 md:hidden"></div>
+                    {/* Right Triangle Fold */}
+                    <div className="absolute top-[5.25rem] -right-1.5 w-1.5 h-1.5 bg-yellow-800 z-40 transform skew-y-45 md:hidden"></div>
+                </>
+            )}
+
+            {/* Cleaner Implementation: Standard CSS Ribbon with ::before/::after simulated by small divs for the 'behind' effect */}
+            {!article.is_read && (
+                <div className="absolute -top-2 -right-2 z-40 w-[100px] h-[100px] overflow-hidden rounded-tr-xl">
+                    {/* Ribbon background */}
+                    <div className="absolute top-[19px] -right-[23px] w-[120px] bg-gold text-carbon text-[10px] font-black uppercase tracking-widest text-center py-1 rotate-45 shadow-sm border border-y-gold-light/20">
+                        Non Lu
+                    </div>
+                </div>
+            )}
+            {/* Wait, the user wants 'pass behind'. That requires the ribbon to go OUTSIDE the box. 
+                My previous 'overflow-hidden' container clips it inside.
+                Let's use a non-clipped appraoch.
+            */}
+            {!article.is_read && (
+                <div className="absolute top-0 right-0 z-50">
+                    <div className="absolute top-0 right-0">
+                        {/* Fold Triangles (The parts that look like they go behind) */}
+                        <div className="absolute top-[-6px] right-[52px] w-0 h-0 border-l-[6px] border-l-transparent border-b-[6px] border-b-yellow-800 border-r-[6px] border-r-transparent transform rotate-[135deg]"></div>
+                        <div className="absolute top-[52px] right-[-6px] w-0 h-0 border-l-[6px] border-l-transparent border-b-[6px] border-b-yellow-800 border-r-[6px] border-r-transparent transform rotate-[135deg]"></div>
+
+                        {/* The main ribbon */}
+                        <div className="absolute top-[-6px] right-[-6px] w-[80px] h-[80px] overflow-hidden">
+                            <div className="absolute top-[18px] left-[-35px] w-[150px] bg-gold text-carbon text-[9px] font-black uppercase tracking-widest text-center py-1.5 transform rotate-45 shadow-[0_2px_4px_rgba(0,0,0,0.2)] border-t border-white/20">
+                                Non Lu
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Image Placeholder with Gold Overlay */}
             <div className="aspect-[16/10] overflow-hidden rounded-xl bg-carbon-light relative mb-6">
                 <div className="absolute inset-0 bg-gradient-to-t from-carbon-dark/80 via-transparent to-transparent opacity-60 z-10"></div>
@@ -24,13 +80,6 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
                         backgroundColor: '#f0f0f0'
                     }}
                 ></div>
-
-                {/* Unread Badge */}
-                {!article.is_read && (
-                    <div className="absolute top-4 right-4 z-20 bg-gold text-carbon text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-carbon/20 shadow-lg">
-                        Non lu
-                    </div>
-                )}
 
                 {/* Meta on top of image */}
                 <div className="absolute bottom-4 left-4 right-4 z-20 flex justify-between items-end">
