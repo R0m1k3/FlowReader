@@ -139,6 +139,21 @@ func main() {
 		})
 	})
 
+	// Serve Static Files (Frontend)
+	staticPath := "./web/dist"
+	if _, err := os.Stat(staticPath); err == nil {
+		fs := http.FileServer(http.Dir(staticPath))
+		r.Handle("/*", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// If the file exists, serve it, otherwise serve index.html (for SPA routing)
+			path := staticPath + r.URL.Path
+			if _, err := os.Stat(path); os.IsNotExist(err) {
+				http.ServeFile(w, r, staticPath+"/index.html")
+				return
+			}
+			fs.ServeHTTP(w, r)
+		}))
+	}
+
 	// Create server
 	srv := &http.Server{
 		Addr:         ":" + cfg.Port,

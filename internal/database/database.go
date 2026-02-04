@@ -6,6 +6,11 @@ import (
 	"fmt"
 	"log"
 
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -36,26 +41,53 @@ func Connect(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
 }
 
 // RunMigrations executes pending database migrations.
-// Note: For production, use golang-migrate CLI. This is for development convenience.
 func RunMigrations(ctx context.Context, pool *pgxpool.Pool) error {
-	// Check if schema_migrations table exists
+	// Check if users table exists
 	var exists bool
 	err := pool.QueryRow(ctx, `
 		SELECT EXISTS (
 			SELECT FROM information_schema.tables 
 			WHERE table_schema = 'public' 
-			AND table_name = 'schema_migrations'
+			AND table_name = 'users'
 		)
 	`).Scan(&exists)
 	if err != nil {
-		return fmt.Errorf("checking schema_migrations: %w", err)
+		return fmt.Errorf("checking users table: %w", err)
 	}
 
-	if !exists {
-		log.Println("Migrations table not found. Run 'make migrate-up' to apply migrations.")
+	if exists {
+		log.Println("Database already initialized")
 		return nil
 	}
 
-	log.Println("Database migrations verified")
+	log.Println("Initializing database and applying migrations...")
+
+	// Read migration files
+	entries, err := os.ReadDir("./migrations")
+	if err != nil {
+		return fmt.Errorf("reading migrations dir: %w", err)
+	}
+
+	var upFiles []string
+	for _, entry := range entries {
+		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".up.sql") {
+			upFiles = append(upFiles, entry.Name())
+		}
+	}
+	sort.Strings(upFiles)
+
+	for _, file := range upFiles {
+		log.Printf("Applying migration: %s", file)
+		content, err := os.ReadFile(filepath.Join("./migrations", file))
+		if err != nil {
+			return fmt.Errorf("reading migration %s: %w", file, err)
+		}
+
+		if _, err := pool.Exec(ctx, string(content)); err != nil {
+			return fmt.Errorf("executing migration %s: %w", file, err)
+		}
+	}
+
+	log.Println("All migrations applied successfully")
 	return nil
 }
