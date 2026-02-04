@@ -93,4 +93,34 @@
   .input-field {
     @apply bg-carbon-dark border border-white/10 text-paper-white px-4 py-3 rounded-lg focus:border-gold/50 focus:ring-1 focus:ring-gold/50 outline-none transition-all placeholder:text-paper-muted/30;
   }
+
+  .magazine-content {
+    @apply font-reading leading-relaxed text-paper-white/80;
+  }
+
+  .magazine-content p {
+    @apply mb-8;
+  }
+
+  .magazine-content a {
+    @apply text-gold border-b border-gold/20 hover:border-gold transition-all no-underline;
+  }
+
+  .magazine-content h2,
+  .magazine-content h3 {
+    @apply text-white font-serif italic mb-6 mt-12;
+  }
+
+  .magazine-content img {
+    @apply rounded-2xl my-12 border border-white/5 shadow-2xl mx-auto;
+  }
+
+  .magazine-content ul,
+  .magazine-content ol {
+    @apply mb-8 ml-6 space-y-4;
+  }
+
+  .magazine-content li {
+    @apply pl-2;
+  }
 }
