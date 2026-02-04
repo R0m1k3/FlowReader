@@ -8,7 +8,14 @@ interface ReaderViewProps {
 
 export function ReaderView({ article, onClose, onToggleFavorite }: ReaderViewProps) {
     // Determine content to show: full content > summary > default message
-    const displayContent = article.content || article.summary || '<p class="italic text-paper-muted">Aucun contenu disponible pour cet article.</p>';
+    let displayContent = article.content || article.summary || '<p class="italic text-paper-muted">Aucun contenu disponible pour cet article.</p>';
+
+    // If we have a hero image, try to remove the first image from the content to avoid duplicates
+    if (article.image_url) {
+        // Simple regex to remove the first img tag if it exists at the start of the content
+        // This is a heuristic and might need refinement, but handles the "duplicate" complaint common in RSS
+        displayContent = displayContent.replace(/<img[^>]*>/, '');
+    }
 
     return (
         <div
@@ -92,7 +99,7 @@ export function ReaderView({ article, onClose, onToggleFavorite }: ReaderViewPro
                     </header>
 
                     <div
-                        className="magazine-content text-paper-white/90 text-xl font-reading leading-relaxed space-y-8 selection:bg-gold/20"
+                        className="magazine-content text-paper-white/90 text-xl font-reading leading-relaxed space-y-8 selection:bg-gold/20 break-words overflow-x-hidden"
                         dangerouslySetInnerHTML={{ __html: displayContent }}
                     />
 
