@@ -1,6 +1,13 @@
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { feedsApi } from '../api/feeds';
 import { articlesApi } from '../api/articles';
+import { AddFeedModal } from './AddFeedModal';
 
-// ... (existing imports)
+interface SidebarProps {
+    onSelectFeed: (feedId: string | null) => void;
+    selectedFeedId: string | null;
+}
 
 export function Sidebar({ onSelectFeed, selectedFeedId }: SidebarProps) {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -54,8 +61,8 @@ export function Sidebar({ onSelectFeed, selectedFeedId }: SidebarProps) {
                             onClick={() => markAllReadMutation.mutate()}
                             disabled={markAllReadMutation.isPending}
                             className={`w-full group flex items-center justify-center space-x-3 px-4 py-3 rounded-lg transition-all duration-300 border ${markAllReadMutation.isPending
-                                    ? 'bg-gold/5 border-gold/10 text-gold/50 cursor-wait'
-                                    : 'bg-transparent border-gold/20 text-paper-muted hover:text-gold hover:bg-gold/5 hover:border-gold/40'
+                                ? 'bg-gold/5 border-gold/10 text-gold/50 cursor-wait'
+                                : 'bg-transparent border-gold/20 text-paper-muted hover:text-gold hover:bg-gold/5 hover:border-gold/40'
                                 }`}
                             title="Tout marquer comme lu"
                         >
