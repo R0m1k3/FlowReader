@@ -77,8 +77,8 @@ export function ReaderView({ article, onClose, onToggleFavorite }: ReaderViewPro
                             <button
                                 onClick={() => onToggleFavorite(article.id)}
                                 className={`flex items-center space-x-3 px-6 py-2.5 rounded-full border transition-all duration-500 ${article.is_favorite
-                                    ? 'bg-gold text-carbon border-carbon/20 shadow-lg'
-                                    : 'border-gold/20 text-gold hover:bg-gold/5'
+                                    ? 'bg-gold text-carbon border-paper-white/20 shadow-lg'
+                                    : 'border-paper-white/20 text-gold hover:bg-gold/5'
                                     }`}
                             >
                                 <svg className="w-4 h-4" fill={article.is_favorite ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">

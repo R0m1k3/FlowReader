@@ -73,8 +73,9 @@
     column-count: 1;
     column-gap: 2rem;
     padding: 2rem 0;
+    column-fill: balance;
   }
-  
+
   @media (min-width: 768px) {
     .magazine-grid {
       column-count: 2;

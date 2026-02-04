@@ -11,7 +11,7 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
     const timeToRead = Math.ceil((article.content?.length || 500) / 1000) + 1;
 
     return (
-        <article className="magazine-card group cursor-pointer break-inside-avoid mb-8 hover:shadow-2xl hover:shadow-gold/10 transition-shadow duration-500 rounded-xl" onClick={() => onClick(article)}>
+        <article className="magazine-card group cursor-pointer break-inside-avoid-column inline-block w-full mb-8 hover:shadow-2xl hover:shadow-gold/20 transition-all duration-500 rounded-xl border border-transparent hover:border-gold/10" onClick={() => onClick(article)}>
             {/* Image Placeholder with Gold Overlay */}
             <div className="aspect-[16/10] overflow-hidden rounded-xl bg-carbon-light relative mb-6">
                 <div className="absolute inset-0 bg-gradient-to-t from-carbon-dark/80 via-transparent to-transparent opacity-60 z-10"></div>
@@ -64,7 +64,7 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
                                 e.stopPropagation();
                                 onToggleRead(article.id, !article.is_read);
                             }}
-                            className={`p-1.5 rounded-full transition-all duration-300 border ${article.is_read ? 'text-gold/40 border-gold/10' : 'text-gold bg-gold/10 border-carbon/20 hover:bg-gold/20'}`}
+                            className={`p-1.5 rounded-full transition-all duration-300 border ${article.is_read ? 'text-gold/40 border-gold/10' : 'text-gold bg-gold/5 border-paper-white/40 hover:bg-gold/20 hover:border-paper-white'}`}
                             title={article.is_read ? "Marquer comme non lu" : "Marquer comme lu"}
                         >
                             <svg className="w-4 h-4" fill={article.is_read ? "none" : "currentColor"} viewBox="0 0 24 24" stroke="currentColor">
