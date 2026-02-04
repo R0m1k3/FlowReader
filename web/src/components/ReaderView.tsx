@@ -26,10 +26,7 @@ export function ReaderView({ article, onClose, onToggleFavorite }: ReaderViewPro
                 className="w-full max-w-4xl bg-carbon-light h-fit min-h-[50vh] my-12 shadow-[0_0_100px_rgba(0,0,0,0.8)] relative animate-in slide-in-from-bottom duration-700 rounded-3xl border border-white/5"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Progress bar simulation */}
-                <div className="sticky top-0 left-0 right-0 h-1 bg-gold/5 z-30">
-                    <div className="h-full bg-gold w-1/4 gold-glow shadow-gold" />
-                </div>
+
 
                 {/* Close button for desktop */}
                 <button
