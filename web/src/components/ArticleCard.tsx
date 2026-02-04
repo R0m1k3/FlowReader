@@ -13,24 +13,24 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
     return (
         <article className="magazine-card group cursor-pointer flex flex-col h-full relative overflow-visible shadow-xl shadow-paper-muted/20 hover:shadow-2xl hover:shadow-gold/20 transition-all duration-500 rounded-xl border border-transparent hover:border-gold/10" onClick={() => onClick(article)}>
 
-            {/* Unread Ribbon - "Paper Corner" Effect */}
-            {/* Unread Ribbon - Wrapping "Paper Corner" Effect */}
+            {/* Unread Ribbon - Polished Wrapping Effect */}
             {!article.is_read && (
-                <div className="absolute -top-2 -right-2 z-50 w-28 h-28 overflow-hidden pointer-events-none">
-                    {/* Ribbon */}
-                    <div className="absolute top-0 right-0 bg-gold text-carbon text-[10px] font-extrabold uppercase tracking-widest py-1.5 w-[140%] text-center transform translate-x-[35%] translate-y-[20%] rotate-45 shadow-lg shadow-black/20 border-b border-white/10">
+                <div className="absolute -top-2 -right-2 z-50 w-[100px] h-[100px] overflow-hidden pointer-events-none">
+                    {/* The Ribbon Itself */}
+                    <div className="absolute top-[22px] -right-[35px] w-[140px] bg-gold text-carbon text-[10px] font-extrabold uppercase tracking-widest py-1.5 text-center transform rotate-45 shadow-lg shadow-black/10 border-b border-white/10 flex items-center justify-center">
                         Non Lu
                     </div>
-                    {/* Darker Folds for "Wrapping" Effect */}
-                    <div className="absolute top-0 left-[2.9rem] w-2 h-2 bg-yellow-900 rotate-45 transform translate-x-0.5 -translate-y-1 z-[-1]"></div>
-                    <div className="absolute bottom-[2.9rem] right-0 w-2 h-2 bg-yellow-900 rotate-45 transform translate-x-1 -translate-y-0.5 z-[-1]"></div>
+
+                    {/* Darker Folds for "Wrapping" Effect (Simulated behind the card) */}
+                    <div className="absolute top-0 left-[22px] w-3 h-3 bg-yellow-900 rotate-45 transform -translate-x-1/2 -translate-y-1/2 z-[-1]"></div>
+                    <div className="absolute bottom-[22px] right-0 w-3 h-3 bg-yellow-900 rotate-45 transform translate-x-1/2 translate-y-1/2 z-[-1]"></div>
                 </div>
             )}
             {!article.is_read && (
-                /* External folds to complete the "behind" illusion if sticking out */
+                /* External fold bits to cover the corner if needed for perfection */
                 <>
-                    <div className="absolute -top-[5px] right-[58px] w-2 h-2 bg-yellow-800 rotate-45 z-40"></div>
-                    <div className="absolute top-[58px] -right-[5px] w-2 h-2 bg-yellow-800 rotate-45 z-40"></div>
+                    <div className="absolute -top-[5px] right-[62px] w-2 h-2 bg-yellow-800 rotate-45 z-40 rounded-sm"></div>
+                    <div className="absolute top-[62px] -right-[5px] w-2 h-2 bg-yellow-800 rotate-45 z-40 rounded-sm"></div>
                 </>
             )}
 
