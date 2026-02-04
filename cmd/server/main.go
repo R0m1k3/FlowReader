@@ -37,9 +37,10 @@ func main() {
 
 	// Initialize repositories
 	userRepo := repository.NewUserRepository(pool)
+	sessionRepo := repository.NewSessionRepository(pool)
 
 	// Initialize services
-	authService := service.NewAuthService(userRepo)
+	authService := service.NewAuthService(userRepo, sessionRepo)
 
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(authService)
@@ -72,9 +73,16 @@ func main() {
 			w.Write([]byte(`{"message":"FlowReader API v1"}`))
 		})
 
-		// Auth routes
+		// Auth routes (public)
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/register", authHandler.Register)
+			r.Post("/login", authHandler.Login)
+			r.Post("/logout", authHandler.Logout)
+		})
+
+		// User routes
+		r.Route("/users", func(r chi.Router) {
+			r.Get("/me", authHandler.Me)
 		})
 	})
 

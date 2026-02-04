@@ -3,10 +3,12 @@ package service
 
 import (
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/base64"
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -25,21 +27,27 @@ var (
 
 // Argon2 parameters (OWASP recommended)
 const (
-	argon2Time    = 1
-	argon2Memory  = 64 * 1024 // 64MB
-	argon2Threads = 4
-	argon2KeyLen  = 32
-	saltLength    = 16
+	argon2Time      = 1
+	argon2Memory    = 64 * 1024 // 64MB
+	argon2Threads   = 4
+	argon2KeyLen    = 32
+	saltLength      = 16
+	tokenLength     = 32
+	sessionDuration = 7 * 24 * time.Hour // 7 days
 )
 
 // AuthService handles user authentication business logic.
 type AuthService struct {
-	userRepo domain.UserRepository
+	userRepo    domain.UserRepository
+	sessionRepo domain.SessionRepository
 }
 
 // NewAuthService creates a new authentication service.
-func NewAuthService(userRepo domain.UserRepository) *AuthService {
-	return &AuthService{userRepo: userRepo}
+func NewAuthService(userRepo domain.UserRepository, sessionRepo domain.SessionRepository) *AuthService {
+	return &AuthService{
+		userRepo:    userRepo,
+		sessionRepo: sessionRepo,
+	}
 }
 
 // RegisterRequest contains the data needed to register a new user.
@@ -53,6 +61,28 @@ type RegisterResponse struct {
 	ID        uuid.UUID `json:"id"`
 	Email     string    `json:"email"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+// LoginRequest contains the data needed to log in.
+type LoginRequest struct {
+	Email     string `json:"email"`
+	Password  string `json:"password"`
+	UserAgent string `json:"-"`
+	IPAddress string `json:"-"`
+}
+
+// LoginResponse contains the session token.
+type LoginResponse struct {
+	Token     string    `json:"token"`
+	ExpiresAt time.Time `json:"expires_at"`
+	User      UserInfo  `json:"user"`
+}
+
+// UserInfo contains basic user information.
+type UserInfo struct {
+	ID      uuid.UUID `json:"id"`
+	Email   string    `json:"email"`
+	IsAdmin bool      `json:"is_admin"`
 }
 
 // Register creates a new user account.
@@ -104,6 +134,78 @@ func (s *AuthService) Register(req RegisterRequest) (*RegisterResponse, error) {
 	}, nil
 }
 
+// Login authenticates a user and creates a session.
+func (s *AuthService) Login(req LoginRequest) (*LoginResponse, error) {
+	// Find user by email
+	user, err := s.userRepo.GetByEmail(req.Email)
+	if err != nil {
+		return nil, fmt.Errorf("finding user: %w", err)
+	}
+	if user == nil {
+		return nil, ErrInvalidCredentials
+	}
+
+	// Verify password
+	if !verifyPassword(req.Password, user.PasswordHash) {
+		return nil, ErrInvalidCredentials
+	}
+
+	// Generate session token
+	token, err := generateToken()
+	if err != nil {
+		return nil, fmt.Errorf("generating token: %w", err)
+	}
+
+	// Create session
+	now := time.Now()
+	session := &domain.Session{
+		ID:        uuid.New(),
+		UserID:    user.ID,
+		Token:     token,
+		ExpiresAt: now.Add(sessionDuration),
+		CreatedAt: now,
+		UserAgent: req.UserAgent,
+		IPAddress: req.IPAddress,
+	}
+
+	if err := s.sessionRepo.Create(session); err != nil {
+		return nil, fmt.Errorf("creating session: %w", err)
+	}
+
+	return &LoginResponse{
+		Token:     token,
+		ExpiresAt: session.ExpiresAt,
+		User: UserInfo{
+			ID:      user.ID,
+			Email:   user.Email,
+			IsAdmin: user.IsAdmin,
+		},
+	}, nil
+}
+
+// Logout invalidates a session.
+func (s *AuthService) Logout(token string) error {
+	return s.sessionRepo.Delete(token)
+}
+
+// GetUserByToken retrieves the user associated with a session token.
+func (s *AuthService) GetUserByToken(token string) (*domain.User, error) {
+	session, err := s.sessionRepo.GetByToken(token)
+	if err != nil {
+		return nil, fmt.Errorf("getting session: %w", err)
+	}
+	if session == nil {
+		return nil, nil // Invalid or expired session
+	}
+
+	user, err := s.userRepo.GetByID(session.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("getting user: %w", err)
+	}
+
+	return user, nil
+}
+
 // hashPassword creates an Argon2id hash of the password.
 func hashPassword(password string) (string, error) {
 	salt := make([]byte, saltLength)
@@ -124,6 +226,47 @@ func hashPassword(password string) (string, error) {
 	)
 
 	return encoded, nil
+}
+
+// verifyPassword checks if the password matches the hash.
+func verifyPassword(password, encodedHash string) bool {
+	// Parse the encoded hash
+	parts := strings.Split(encodedHash, "$")
+	if len(parts) != 6 {
+		return false
+	}
+
+	var memory, time uint32
+	var threads uint8
+	_, err := fmt.Sscanf(parts[3], "m=%d,t=%d,p=%d", &memory, &time, &threads)
+	if err != nil {
+		return false
+	}
+
+	salt, err := base64.RawStdEncoding.DecodeString(parts[4])
+	if err != nil {
+		return false
+	}
+
+	expectedHash, err := base64.RawStdEncoding.DecodeString(parts[5])
+	if err != nil {
+		return false
+	}
+
+	// Compute hash with same parameters
+	computedHash := argon2.IDKey([]byte(password), salt, time, memory, threads, uint32(len(expectedHash)))
+
+	// Constant-time comparison
+	return subtle.ConstantTimeCompare(expectedHash, computedHash) == 1
+}
+
+// generateToken creates a cryptographically secure random token.
+func generateToken() (string, error) {
+	bytes := make([]byte, tokenLength)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return base64.URLEncoding.EncodeToString(bytes), nil
 }
 
 // isValidEmail checks if the email has a valid format.
