@@ -11,7 +11,7 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
     const timeToRead = Math.ceil((article.content?.length || 500) / 1000) + 1;
 
     return (
-        <article className="magazine-card group cursor-pointer" onClick={() => onClick(article)}>
+        <article className="magazine-card group cursor-pointer break-inside-avoid mb-8" onClick={() => onClick(article)}>
             {/* Image Placeholder with Gold Overlay */}
             <div className="aspect-[16/10] overflow-hidden rounded-xl bg-carbon-light relative mb-6">
                 <div className="absolute inset-0 bg-gradient-to-t from-carbon-dark/80 via-transparent to-transparent opacity-60 z-10"></div>

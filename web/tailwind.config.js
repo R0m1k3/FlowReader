@@ -8,17 +8,17 @@ export default {
         extend: {
             colors: {
                 carbon: {
-                    DEFAULT: '#1a1a1a',
-                    light: '#262626',
-                    dark: '#121212',
+                    DEFAULT: '#F8F9FA', // Alabaster
+                    light: '#FFFFFF',   // White for cards
+                    dark: '#E9ECEF',    // Light gray for borders/inputs
                 },
                 gold: {
                     DEFAULT: '#d4af37',
                     glow: 'rgba(212, 175, 55, 0.4)',
                 },
                 paper: {
-                    white: '#e5e5e5',
-                    muted: '#a3a3a3',
+                    white: '#1A1A1A',   // Dark text
+                    muted: '#6B7280',   // Gray text
                 }
             },
             fontFamily: {
