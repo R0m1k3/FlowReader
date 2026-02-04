@@ -20,7 +20,12 @@ export function DashboardPage({ selectedFeedId }: DashboardPageProps) {
 
     const { data: articles, isLoading } = useQuery({
         queryKey: ['articles', selectedFeedId],
-        queryFn: () => articlesApi.list({ feed_id: selectedFeedId || undefined }),
+        queryFn: () => {
+            if (selectedFeedId === 'favorites') {
+                return articlesApi.list({ favorite: true });
+            }
+            return articlesApi.list({ feed_id: selectedFeedId || undefined });
+        },
     });
 
     const refreshMutation = useMutation({
@@ -61,7 +66,7 @@ export function DashboardPage({ selectedFeedId }: DashboardPageProps) {
                         <div className="space-y-1">
                             <p className="text-gold text-[10px] uppercase tracking-[0.5em] font-black">Édition du jour</p>
                             <h1 className="text-6xl font-serif italic text-paper-white tracking-tighter">
-                                {selectedFeedId ? 'Archives du Flux' : 'La Une'}
+                                {selectedFeedId === 'favorites' ? 'Mes Favoris' : selectedFeedId ? 'Archives du Flux' : 'La Une'}
                             </h1>
                         </div>
                         <div className="flex flex-col items-center gap-4 text-center">

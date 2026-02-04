@@ -125,6 +125,20 @@ export function Sidebar({ onSelectFeed, selectedFeedId }: SidebarProps) {
                                     </span>
                                 </button>
                             </div>
+                            <div className="relative group/item mb-4">
+                                <button
+                                    onClick={() => onSelectFeed('favorites')}
+                                    className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg transition-all duration-300 text-left ${selectedFeedId === 'favorites'
+                                        ? 'bg-gold/10 text-gold-bright'
+                                        : 'text-paper-muted hover:text-gold hover:bg-gold/5'
+                                        }`}
+                                >
+                                    <span className="text-sm font-medium truncate flex items-center">
+                                        <span className={`w-1.5 h-1.5 rounded-full bg-gold/40 mr-3 transition-opacity ${selectedFeedId === 'favorites' ? 'opacity-100' : 'opacity-0 group-hover/item:opacity-100'}`}></span>
+                                        Mes Favoris
+                                    </span>
+                                </button>
+                            </div>
                             {feeds?.map((feed) => (
                                 <div key={feed.id} className="relative group/item">
                                     <button
