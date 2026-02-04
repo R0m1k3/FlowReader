@@ -38,6 +38,7 @@ type ArticleRepository interface {
 	MarkAsRead(id uuid.UUID) error
 	MarkAsUnread(id uuid.UUID) error
 	MarkAllAsRead(feedID uuid.UUID) error
+	MarkAllAsReadGlobal(userID uuid.UUID) error
 	ToggleFavorite(id uuid.UUID) error
 	GetFavorites(userID uuid.UUID, limit, offset int) ([]*Article, error)
 	CountUnread(feedID uuid.UUID) (int, error)

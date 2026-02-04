@@ -1,46 +1,31 @@
-const API_BASE = '/api/v1';
+import { API_BASE, handleResponse } from './client';
 
-interface RegisterRequest {
-    email: string;
-    password: string;
-}
-
-interface LoginRequest {
-    email: string;
-    password: string;
-}
-
-interface User {
+export interface User {
     id: string;
     email: string;
     is_admin: boolean;
 }
 
-interface LoginResponse {
+export interface RegisterRequest {
+    email: string;
+    password: string;
+}
+
+export interface LoginRequest {
+    email: string;
+    password: string;
+}
+
+export interface LoginResponse {
     token: string;
     expires_at: string;
     user: User;
 }
 
-interface RegisterResponse {
+export interface RegisterResponse {
     id: string;
     email: string;
     created_at: string;
-}
-
-class ApiError extends Error {
-    constructor(public status: number, message: string) {
-        super(message);
-        this.name = 'ApiError';
-    }
-}
-
-async function handleResponse<T>(response: Response): Promise<T> {
-    if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: 'Request failed' }));
-        throw new ApiError(response.status, error.error || 'Request failed');
-    }
-    return response.json();
 }
 
 export const authApi = {
@@ -78,6 +63,3 @@ export const authApi = {
         return handleResponse<User>(response);
     },
 };
-
-export { ApiError };
-export type { User, LoginResponse, RegisterResponse };

@@ -9,21 +9,24 @@ import (
 	"github.com/google/uuid"
 	"github.com/michael/flowreader/internal/domain"
 	"github.com/michael/flowreader/internal/parser"
+	"github.com/michael/flowreader/internal/ws"
 )
 
-// FetchService handles feed fetching and article ingestion.
+// FetchService handles fetching and parsing feeds.
 type FetchService struct {
 	feedRepo    domain.FeedRepository
 	articleRepo domain.ArticleRepository
 	parser      *parser.FeedParser
+	hub         *ws.Hub
 }
 
 // NewFetchService creates a new fetch service.
-func NewFetchService(feedRepo domain.FeedRepository, articleRepo domain.ArticleRepository) *FetchService {
+func NewFetchService(feedRepo domain.FeedRepository, articleRepo domain.ArticleRepository, hub *ws.Hub) *FetchService {
 	return &FetchService{
 		feedRepo:    feedRepo,
 		articleRepo: articleRepo,
 		parser:      parser.NewFeedParser(),
+		hub:         hub,
 	}
 }
 
@@ -38,7 +41,7 @@ func (s *FetchService) FetchFeed(ctx context.Context, feedID uuid.UUID) error {
 	}
 
 	// Parse the feed
-	parsed, err := s.parser.Parse(ctx, feed.URL, feed.ID)
+	parsedFeed, err := s.parser.Parse(ctx, feed.URL, feed.ID)
 	if err != nil {
 		// Update feed with error
 		s.feedRepo.UpdateFetchStatus(feed.ID, time.Now(), err.Error())
@@ -46,18 +49,27 @@ func (s *FetchService) FetchFeed(ctx context.Context, feedID uuid.UUID) error {
 	}
 
 	// Update feed metadata
-	feed.Title = parsed.Title
-	feed.Description = parsed.Description
-	feed.SiteURL = parsed.SiteURL
-	feed.ImageURL = parsed.ImageURL
+	feed.Title = parsedFeed.Title
+	feed.Description = parsedFeed.Description
+	feed.SiteURL = parsedFeed.SiteURL
+	feed.ImageURL = parsedFeed.ImageURL
 	if err := s.feedRepo.Update(feed); err != nil {
 		log.Printf("Warning: failed to update feed metadata: %v", err)
 	}
 
-	// Insert new articles (ON CONFLICT DO NOTHING handles duplicates)
-	if len(parsed.Articles) > 0 {
-		if err := s.articleRepo.CreateBatch(parsed.Articles); err != nil {
-			return fmt.Errorf("creating articles: %w", err)
+	// Ingest articles
+	if len(parsedFeed.Articles) > 0 {
+		if err := s.articleRepo.CreateBatch(parsedFeed.Articles); err != nil {
+			return fmt.Errorf("ingesting articles: %w", err)
+		}
+
+		// Broadcast update
+		if s.hub != nil {
+			s.hub.Broadcast("new_articles", map[string]interface{}{
+				"feed_id":    feed.ID,
+				"feed_title": feed.Title,
+				"count":      len(parsedFeed.Articles),
+			})
 		}
 	}
 

@@ -235,6 +235,24 @@ func (r *ArticleRepository) MarkAllAsRead(feedID uuid.UUID) error {
 	return nil
 }
 
+// MarkAllAsReadGlobal marks all articles for a user as read.
+func (r *ArticleRepository) MarkAllAsReadGlobal(userID uuid.UUID) error {
+	ctx := context.Background()
+
+	query := `
+		UPDATE articles
+		SET is_read = true, read_at = NOW()
+		WHERE feed_id IN (SELECT id FROM feeds WHERE user_id = $1) AND is_read = false
+	`
+
+	_, err := r.pool.Exec(ctx, query, userID)
+	if err != nil {
+		return fmt.Errorf("marking all articles as read globally: %w", err)
+	}
+
+	return nil
+}
+
 // ToggleFavorite toggles the favorite status of an article.
 func (r *ArticleRepository) ToggleFavorite(id uuid.UUID) error {
 	ctx := context.Background()

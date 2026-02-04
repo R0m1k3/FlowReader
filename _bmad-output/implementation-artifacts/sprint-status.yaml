@@ -44,17 +44,17 @@ development_status:
   epic-1-retrospective: optional
 
   # Epic 2: Feed Core Engine
-  epic-2: in-progress
+  epic-2: done
   2-1-feed-model-add-feed-by-url: done
   2-2-feed-metadata-auto-discovery: done
   2-3-opml-import: done
   2-4-feed-management-crud: done
-  2-5-background-feed-fetcher: review
+  2-5-background-feed-fetcher: done
   epic-2-retrospective: optional
 
   # Epic 3: Lecture Plaisir & Real-Time Experience
-  epic-3: backlog
-  3-1-dashboard-nouveautes: backlog
+  epic-3: in-progress
+  3-1-dashboard-nouveautes: in-progress
   3-2-article-detail-reader-mode: backlog
   3-3-mark-as-read-manual-auto: backlog
   3-4-mark-all-as-read: backlog

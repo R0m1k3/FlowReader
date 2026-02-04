@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/michael/flowreader/internal/domain"
 	"github.com/michael/flowreader/internal/service"
+	"github.com/michael/flowreader/internal/utils"
 )
 
 // ArticleHandler handles article-related HTTP requests.
@@ -15,6 +16,7 @@ type ArticleHandler struct {
 	articleRepo domain.ArticleRepository
 	feedService *service.FeedService
 	authService *service.AuthService
+	sanitizer   *utils.ContentSanitizer
 }
 
 // NewArticleHandler creates a new article handler.
@@ -23,6 +25,7 @@ func NewArticleHandler(articleRepo domain.ArticleRepository, feedService *servic
 		articleRepo: articleRepo,
 		feedService: feedService,
 		authService: authService,
+		sanitizer:   utils.NewContentSanitizer(),
 	}
 }
 
@@ -137,6 +140,13 @@ func (h *ArticleHandler) Get(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		respondError(w, http.StatusForbidden, "Access denied")
 		return
+	}
+
+	// Sanitize content
+	if article.Content != "" {
+		article.Content = h.sanitizer.Sanitize(article.Content)
+	} else if article.Summary != "" {
+		article.Summary = h.sanitizer.Sanitize(article.Summary)
 	}
 
 	respondJSON(w, http.StatusOK, article)
@@ -269,6 +279,22 @@ func (h *ArticleHandler) MarkAllRead(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.articleRepo.MarkAllAsRead(feedID); err != nil {
+		respondError(w, http.StatusInternalServerError, "Failed to mark all as read")
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]string{"message": "All articles marked as read"})
+}
+
+// MarkAllReadGlobal handles POST /api/v1/articles/read-all
+func (h *ArticleHandler) MarkAllReadGlobal(w http.ResponseWriter, r *http.Request) {
+	userID, err := h.getUserFromRequest(r)
+	if err != nil {
+		respondError(w, http.StatusUnauthorized, "Not authenticated")
+		return
+	}
+
+	if err := h.articleRepo.MarkAllAsReadGlobal(userID); err != nil {
 		respondError(w, http.StatusInternalServerError, "Failed to mark all as read")
 		return
 	}

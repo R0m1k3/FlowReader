@@ -17,6 +17,7 @@ import (
 	"github.com/michael/flowreader/internal/repository"
 	"github.com/michael/flowreader/internal/service"
 	"github.com/michael/flowreader/internal/worker"
+	"github.com/michael/flowreader/internal/ws"
 )
 
 func main() {
@@ -45,12 +46,18 @@ func main() {
 	// Initialize services
 	authService := service.NewAuthService(userRepo, sessionRepo)
 	feedService := service.NewFeedService(feedRepo)
-	fetchService := service.NewFetchService(feedRepo, articleRepo)
+
+	// Initialize WS Hub
+	hub := ws.NewHub()
+	go hub.Run()
+
+	fetchService := service.NewFetchService(feedRepo, articleRepo, hub)
 
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(authService)
 	feedHandler := handler.NewFeedHandler(feedService, authService)
 	articleHandler := handler.NewArticleHandler(articleRepo, feedService, authService)
+	wsHandler := handler.NewWSHandler(hub, authService)
 
 	// Start background feed fetcher
 	fetcher := worker.NewFeedFetcher(fetchService, 15*time.Minute, 5)
@@ -112,12 +119,16 @@ func main() {
 		// Article routes
 		r.Route("/articles", func(r chi.Router) {
 			r.Get("/", articleHandler.List)
+			r.Post("/read-all", articleHandler.MarkAllReadGlobal)
 			r.Get("/favorites", articleHandler.GetFavorites)
 			r.Get("/{id}", articleHandler.Get)
 			r.Post("/{id}/read", articleHandler.MarkRead)
 			r.Delete("/{id}/read", articleHandler.MarkUnread)
 			r.Post("/{id}/favorite", articleHandler.ToggleFavorite)
 		})
+
+		// WebSocket route
+		r.Get("/ws", wsHandler.Connect)
 	})
 
 	// Create server
