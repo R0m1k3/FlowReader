@@ -1,0 +1,9 @@
+{
+    "name": "Paper Dark",
+    "background": "#1a1a1a",
+    "container": "#262626",
+    "border": "#d4af37",
+    "text": "#e5e5e5",
+    "accent": "#d4af37",
+    "muted": "#a3a3a3"
+}

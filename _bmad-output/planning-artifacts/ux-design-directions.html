@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlowReader - Design Showcase (Paper Dark)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #1a1a1a;
+            --surface: #262626;
+            --accent: #d4af37;
+            --text-primary: #e5e5e5;
+            --text-secondary: #a3a3a3;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            scroll-behavior: smooth;
+        }
+
+        .serif { font-family: 'Merriweather', serif; }
+        .display { font-family: 'Playfair Display', serif; }
+
+        .card {
+            background-color: var(--surface);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            overflow: hidden;
+            border-radius: 8px;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .accent-border { border-top: 3px solid var(--accent); }
+        
+        .gold-glow { text-shadow: 0 0 10px rgba(212, 175, 55, 0.3); }
+
+        /* Variations */
+        .v-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 2rem; }
+        .v-list { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem; }
+        
+        /* Reader View Simulation */
+        #reader-view {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--bg);
+            z-index: 100;
+            overflow-y: auto;
+            padding: 2rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-gold { background-color: var(--accent); color: #1a1a1a; }
+        .btn-gold:hover { opacity: 0.9; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <header class="mb-12 border-b border-white/10 pb-6 flex justify-between items-end">
+        <div>
+            <h1 class="display text-4xl mb-2 gold-glow uppercase tracking-widest text-[#d4af37]">FlowReader</h1>
+            <p class="text-secondary tracking-wide">Direction Design : <span class="text-white font-semibold">Paper Dark</span></p>
+        </div>
+        <nav class="flex gap-4">
+            <button onclick="setView('grid')" class="text-sm opacity-50 hover:opacity-100 transition">GRILLE</button>
+            <button onclick="setView('list')" class="text-sm opacity-50 hover:opacity-100 transition">LISTE</button>
+        </nav>
+    </header>
+
+    <main id="main-content" class="v-grid">
+        <!-- Card 1: Variation A (Image Hero) -->
+        <article class="card accent-border" onclick="openReader('L\'Art de la Lecture Minimaliste', 'L\'essentiel est invisible pour les yeux RSS...')">
+            <div class="h-48 bg-gradient-to-br from-[#d4af37]/20 to-[#262626] flex items-center justify-center">
+                <span class="display text-4xl opacity-20 italic">Minimalist</span>
+            </div>
+            <div class="p-6">
+                <span class="text-[10px] uppercase tracking-widest text-[#d4af37] mb-2 block">Culture & Design</span>
+                <h2 class="display text-xl mb-3 leading-tight">L'Art de la Lecture Minimaliste</h2>
+                <p class="text-secondary text-sm leading-relaxed line-clamp-3">Comment réduire le bruit numérique pour se concentrer sur l'essentiel. Une exploration des interfaces sacrées...</p>
+                <div class="mt-4 flex justify-between items-center text-[10px] text-zinc-500 uppercase tracking-tighter">
+                    <span>5 MIN READ</span>
+                    <span>OCT 24, 2026</span>
+                </div>
+            </div>
+        </article>
+
+        <!-- Card 2: Variation B (Typo Focused) -->
+        <article class="card p-6 border border-white/5" onclick="openReader('La Renaissance des Flux RSS', 'Pourquoi nous revenons tous vers le web ouvert...')">
+            <span class="text-[10px] uppercase tracking-widest text-[#d4af37] mb-2 block">Technology</span>
+            <h2 class="display text-2xl mb-4 leading-tight italic">"La Renaissance des Flux RSS : Un retour aux sources du web."</h2>
+            <p class="serif text-secondary text-base leading-relaxed mb-6">L'algorithme nous a trahi. Le flux RSS est le dernier rempart de la liberté éditoriale numérique.</p>
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-zinc-700"></div>
+                <div class="text-[10px] text-zinc-400">
+                    <p class="font-bold text-white uppercase">Jean-Michel OpenWeb</p>
+                    <p>REDACTEUR EN CHEF</p>
+                </div>
+            </div>
+        </article>
+
+        <!-- Card 3: Variation C (Visual Impact) -->
+        <article class="card relative group h-80 bg-zinc-800" onclick="openReader('Voyage Spatial : Mars 2026', 'Les premières images de la colonie alpha...')">
+            <div class="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-80"></div>
+            <div class="absolute inset-0 p-6 flex flex-col justify-end">
+                <span class="text-[10px] uppercase tracking-widest text-white/50 mb-2 block">Exploration</span>
+                <h2 class="display text-3xl mb-2 leading-tight group-hover:text-[#d4af37] transition-colors">Mars 2026</h2>
+                <p class="text-white/70 text-sm line-clamp-2">Les premières images haute définition de la base Utopia Planitia viennent d'arriver.</p>
+            </div>
+        </article>
+
+        <!-- Card 4: Variation D (Magazine Grid) -->
+        <article class="card accent-border" onclick="openReader('Gastronomie : Le Café Parfait', 'Guide ultime pour une extraction sacrée...')">
+            <div class="h-40 bg-zinc-900 flex items-center justify-center">
+                 <svg class="w-16 h-16 text-[#d4af37]/30" fill="currentColor" viewBox="0 0 24 24"><path d="M2 21h18v-2H2M20 8h-2V5h2m0-2H4v10a4 4 0 0 0 4 4h6a4 4 0 0 0 4-4v-3h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"/></svg>
+            </div>
+            <div class="p-6">
+                <h2 class="display text-xl mb-3">L'Alchimie du Grain</h2>
+                <p class="text-secondary text-sm">Le secret réside dans la température de l'eau et la patience de l'esprit.</p>
+                <div class="mt-4 border-t border-white/5 pt-4">
+                    <span class="text-[#d4af37] text-xs font-semibold">↑ FAVORITE</span>
+                </div>
+            </div>
+        </article>
+    </main>
+
+    <!-- Simulation du Reader Mode -->
+    <div id="reader-view">
+        <button onclick="closeReader()" class="mb-8 text-secondary hover:text-white uppercase tracking-widest text-xs flex items-center gap-2">
+            ← RETOUR AU MAGAZINE
+        </button>
+        <div class="max-w-2xl mx-auto">
+            <header class="text-center mb-16">
+                <span id="read-category" class="text-[10px] uppercase tracking-[0.3em] text-[#d4af37] mb-4 block">CULTURE</span>
+                <h1 id="read-title" class="display text-5xl md:text-6xl mb-8 leading-tight italic">Titre de l'Article</h1>
+                <div class="h-px w-24 bg-[#d4af37]/30 mx-auto mb-8"></div>
+                <div class="text-secondary text-sm tracking-widest uppercase">
+                    Par Michael • 4 Février 2026
+                </div>
+            </header>
+            
+            <figure class="mb-12 aspect-video bg-zinc-800 rounded-lg flex items-center justify-center overflow-hidden">
+                <div class="text-zinc-600 display text-2xl italic">Image Principale Centrée</div>
+            </figure>
+
+            <div class="serif text-lg md:text-xl leading-relaxed text-zinc-300 space-y-6">
+                <p>Ceci est une simulation de l'expérience de lecture "Livre". L'utilisation d'une police Serif comme <span class="text-white italic">Merriweather</span> permet de réduire la fatigue visuelle lors d'une lecture prolongée.</p>
+                <p>L'espacement vertical (leading) est généreux pour permettre aux mots de respirer. Aucun bouton, aucune publicité, aucun menu distractif. Juste le texte et vous.</p>
+                <p id="read-content">Contenu extrait et nettoyé...</p>
+                <blockquote class="border-l-2 border-[#d4af37] pl-6 py-2 my-12 italic text-2xl text-white display">
+                    "La simplicité est l'ultime sophistication."
+                </blockquote>
+                <p>Imaginez faire défiler ce texte avec une fluidité absolue, où chaque image apparaît comme un point d'ancrage visuel dans votre voyage informatif.</p>
+            </div>
+        </div>
+    </div>
+
+    <footer class="mt-20 pt-12 border-t border-white/5 text-center">
+        <div class="inline-flex gap-8 p-4 bg-zinc-900/50 rounded-full border border-white/5 px-8">
+            <div class="flex items-center gap-2">
+                <div class="w-3 h-3 rounded-full bg-[#1a1a1a]"></div>
+                <span class="text-xs text-zinc-500 uppercase tracking-widest">Background</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-3 h-3 rounded-full bg-[#d4af37]"></div>
+                <span class="text-xs text-zinc-500 uppercase tracking-widest">Accent Gold</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-3 h-3 rounded-full bg-[#e5e5e5]"></div>
+                <span class="text-xs text-zinc-500 uppercase tracking-widest">Text</span>
+            </div>
+        </div>
+        <p class="text-zinc-600 text-[10px] mt-8 tracking-widest uppercase">FlowReader UX Prototype v0.1 • Crafted with Tailwind</p>
+    </footer>
+
+    <script>
+        function setView(type) {
+            const main = document.getElementById('main-content');
+            if (type === 'list') {
+                main.classList.remove('v-grid');
+                main.classList.add('v-list');
+            } else {
+                main.classList.remove('v-list');
+                main.classList.add('v-grid');
+            }
+        }
+
+        function openReader(title, content) {
+            document.getElementById('read-title').innerText = title;
+            document.getElementById('read-content').innerText = content;
+            document.getElementById('reader-view').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeReader() {
+            document.getElementById('reader-view').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+    </script>
+</body>
+</html>

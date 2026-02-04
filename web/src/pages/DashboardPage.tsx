@@ -64,11 +64,8 @@ export function DashboardPage() {
 
     const handleArticleClick = async (article: Article) => {
         try {
-            // Fetch full content and sanitize
             const fullArticle = await articlesApi.get(article.id);
             setViewingArticle(fullArticle);
-
-            // Mark as read automatically
             if (!article.is_read) {
                 toggleReadMutation.mutate({ id: article.id, is_read: false });
             }
@@ -78,56 +75,85 @@ export function DashboardPage() {
     };
 
     return (
-        <div className="dashboard-layout">
+        <div className="flex h-screen bg-carbon overflow-hidden">
             <Sidebar
                 onSelectFeed={setSelectedFeedId}
                 selectedFeedId={selectedFeedId}
             />
 
-            <div className="dashboard-content">
-                <header className="dashboard-header">
-                    <h1>{selectedFeedId === 'favorites' ? 'Favoris' : 'Nouveautés'}</h1>
+            <div className="flex-1 flex flex-col min-w-0 bg-carbon overflow-hidden relative">
+                <header className="h-20 border-b border-carbon-dark/50 flex items-center justify-between px-8 bg-carbon/50 backdrop-blur-md z-10 shrink-0">
+                    <div className="min-w-0">
+                        <h1 className="text-gold text-2xl md:text-3xl font-serif italic truncate">
+                            {selectedFeedId === 'favorites' ? 'Mes Favoris' : 'Nouveautés'}
+                        </h1>
+                        <p className="text-paper-muted text-[10px] uppercase tracking-widest font-bold">
+                            {articles?.length || 0} ARTICLES À DÉCOUVRIR
+                        </p>
+                    </div>
 
-                    <div className="header-actions">
+                    <div className="flex items-center space-x-6 shrink-0">
                         {articles && articles.length > 0 && selectedFeedId !== 'favorites' && (
                             <button
-                                className="mark-all-read-btn"
+                                className="btn-secondary text-[10px] uppercase tracking-widest font-bold py-2 px-4 border-gold/30 hidden md:block"
                                 onClick={() => markAllReadMutation.mutate()}
                                 disabled={markAllReadMutation.isPending}
                             >
-                                {markAllReadMutation.isPending ? 'Chargement...' : 'Tout marquer comme lu'}
+                                {markAllReadMutation.isPending ? 'Patientez...' : 'Tout marquer lu'}
                             </button>
                         )}
 
-                        <div className="user-info">
-                            <span>{user?.email}</span>
-                            <button onClick={handleLogout} className="logout-btn">
-                                Déconnexion
-                            </button>
+                        <div className="flex items-center space-x-4 border-l border-carbon-dark/50 pl-6">
+                            <div className="text-right hidden sm:block">
+                                <p className="text-paper-white text-xs font-medium truncate max-w-[150px]">{user?.email}</p>
+                                <button onClick={handleLogout} className="text-paper-muted hover:text-gold text-[10px] uppercase tracking-tighter transition-colors">
+                                    Déconnexion
+                                </button>
+                            </div>
+                            <div className="w-10 h-10 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center text-gold font-serif text-lg shrink-0">
+                                {user?.email?.[0].toUpperCase() || 'M'}
+                            </div>
                         </div>
                     </div>
                 </header>
 
-                <main className="articles-main">
+                <main className="flex-1 overflow-y-auto px-4 md:px-8 py-10">
                     {isLoading ? (
-                        <div className="loading-state">
-                            <div className="spinner"></div>
+                        <div className="flex flex-col items-center justify-center h-full space-y-4 opacity-50">
+                            <div className="w-12 h-12 border-2 border-gold/20 border-t-gold rounded-full animate-spin" />
+                            <p className="text-gold text-xs uppercase tracking-widest animate-pulse">Édition en cours...</p>
                         </div>
                     ) : articles?.length === 0 ? (
-                        <div className="empty-state">
-                            <h2>🎉 Tout est lu !</h2>
-                            <p>Revenez plus tard pour de nouveaux articles.</p>
+                        <div className="flex flex-col items-center justify-center h-full text-center space-y-6 animate-in fade-in duration-1000">
+                            <div className="text-6xl filter grayscale opacity-30">💆‍♂️</div>
+                            <div className="max-w-md">
+                                <h2 className="text-paper-white text-2xl font-serif mb-2">Immersion Totale</h2>
+                                <p className="text-paper-muted font-reading text-lg">
+                                    Vous avez épuisé vos flux. Profitez de ce moment de silence.
+                                </p>
+                            </div>
+                            <button
+                                className="btn-secondary text-[10px] uppercase tracking-[0.2em] font-bold"
+                                onClick={() => queryClient.invalidateQueries({ queryKey: ['articles'] })}
+                            >
+                                Actualiser
+                            </button>
                         </div>
                     ) : (
-                        <div className="articles-grid">
-                            {articles?.map((article: Article) => (
-                                <ArticleCard
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-8">
+                            {articles?.map((article: Article, index: number) => (
+                                <div
                                     key={article.id}
-                                    article={article}
-                                    onClick={handleArticleClick}
-                                    onToggleRead={(id, is_read) => toggleReadMutation.mutate({ id, is_read })}
-                                    onToggleFavorite={(id) => toggleFavoriteMutation.mutate({ id })}
-                                />
+                                    className={`${index === 0 ? 'md:col-span-2' : ''} animate-in fade-in slide-in-from-bottom-4 duration-500`}
+                                    style={{ animationDelay: `${index * 50}ms` }}
+                                >
+                                    <ArticleCard
+                                        article={article}
+                                        onClick={handleArticleClick}
+                                        onToggleRead={(id, is_read) => toggleReadMutation.mutate({ id, is_read })}
+                                        onToggleFavorite={(id) => toggleFavoriteMutation.mutate({ id })}
+                                    />
+                                </div>
                             ))}
                         </div>
                     )}

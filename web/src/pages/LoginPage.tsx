@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
-import { authApi, ApiError } from '../api/auth';
+import { authApi } from '../api/auth';
+import { ApiError } from '../api/client';
 import { useAuthStore } from '../stores/authStore';
 
 export function LoginPage() {
@@ -21,7 +22,7 @@ export function LoginPage() {
             if (err instanceof ApiError) {
                 setError(err.message);
             } else {
-                setError('Login failed. Please try again.');
+                setError('Échec de la connexion. Veuillez réessayer.');
             }
         },
     });
@@ -33,50 +34,68 @@ export function LoginPage() {
     };
 
     return (
-        <div className="login-container">
-            <div className="login-card">
-                <h1>FlowReader</h1>
-                <p className="subtitle">Connectez-vous à votre compte</p>
+        <div className="min-h-screen bg-carbon flex items-center justify-center p-6">
+            <div className="w-full max-w-md bg-carbon-light p-10 rounded-xl shadow-2xl border border-carbon-dark/50 animate-in fade-in zoom-in duration-500">
+                <div className="text-center mb-10">
+                    <h1 className="text-gold text-4xl font-serif mb-2 italic tracking-tight">FlowReader</h1>
+                    <p className="text-paper-muted text-[10px] uppercase tracking-[0.3em] font-bold">Magazine Personnel</p>
+                </div>
 
-                <form onSubmit={handleSubmit}>
-                    {error && <div className="error-message">{error}</div>}
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    {error && (
+                        <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-xs p-3 rounded-md animate-shake">
+                            {error}
+                        </div>
+                    )}
 
-                    <div className="form-group">
-                        <label htmlFor="email">Email</label>
+                    <div className="space-y-2">
+                        <label htmlFor="email" className="block text-paper-muted text-[10px] uppercase tracking-widest font-bold">
+                            Email
+                        </label>
                         <input
                             id="email"
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            placeholder="vous@example.com"
+                            className="w-full bg-carbon border border-carbon-dark text-paper-white px-4 py-3 rounded-md focus:border-gold focus:ring-1 focus:ring-gold outline-none transition-all placeholder:text-carbon-light"
+                            placeholder="vous@exemple.com"
                             required
                             autoFocus
                         />
                     </div>
 
-                    <div className="form-group">
-                        <label htmlFor="password">Mot de passe</label>
+                    <div className="space-y-2">
+                        <label htmlFor="password" title="password" className="block text-paper-muted text-[10px] uppercase tracking-widest font-bold">
+                            Mot de passe
+                        </label>
                         <input
                             id="password"
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
+                            className="w-full bg-carbon border border-carbon-dark text-paper-white px-4 py-3 rounded-md focus:border-gold focus:ring-1 focus:ring-gold outline-none transition-all placeholder:text-carbon-light"
                             placeholder="••••••••"
                             required
-                            minLength={8}
                         />
                     </div>
 
-                    <button type="submit" disabled={loginMutation.isPending}>
-                        {loginMutation.isPending ? 'Connexion...' : 'Se connecter'}
+                    <button
+                        type="submit"
+                        disabled={loginMutation.isPending}
+                        className="w-full btn-primary py-4 text-xs uppercase tracking-[0.2em] font-bold mt-4 disabled:opacity-50 disabled:cursor-not-wait"
+                    >
+                        {loginMutation.isPending ? 'Authentification...' : 'Continuer'}
                     </button>
                 </form>
 
-                <p className="register-link">
-                    Pas encore de compte ?{' '}
-                    <a href="/register" onClick={(e) => { e.preventDefault(); navigate('/register'); }}>
-                        S'inscrire
-                    </a>
+                <p className="mt-8 text-center text-paper-muted text-xs">
+                    Nouveau chez FlowReader ?{' '}
+                    <button
+                        className="text-gold hover:underline font-bold tracking-wide"
+                        onClick={() => navigate('/register')}
+                    >
+                        Créer un compte
+                    </button>
                 </p>
             </div>
         </div>
