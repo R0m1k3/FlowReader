@@ -11,10 +11,9 @@ RUN npm run build
 # Step 2: Build the Go Backend
 FROM golang:1.24-alpine AS builder
 WORKDIR /app
-RUN apk add --no-cache git
-COPY go.mod ./
-RUN go mod download
 COPY . .
+RUN go mod tidy
+RUN go mod download
 # Copy the built frontend from Step 1
 COPY --from=web-builder /app/web/dist ./web/dist
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o /server ./cmd/server
