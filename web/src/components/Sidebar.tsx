@@ -39,7 +39,12 @@ export function Sidebar({ onSelectFeed, selectedFeedId }: SidebarProps) {
             <aside className="w-72 bg-carbon-dark/50 backdrop-blur-xl border-r border-white/5 h-screen flex flex-col z-20">
                 <div className="p-8 pb-4">
                     <div className="flex items-center justify-between mb-8">
-                        <img src="/logo.png" alt="FlowReader" className="h-12 w-auto object-contain" />
+                        <h1
+                            className="text-gold text-3xl font-serif italic tracking-tight"
+                            style={{ textShadow: '1px 1px 2px rgba(100, 100, 100, 0.5)' }}
+                        >
+                            FlowReader
+                        </h1>
                         <button
                             onClick={() => setIsAddModalOpen(true)}
                             className="w-8 h-8 flex items-center justify-center rounded-full border border-gold/20 text-gold hover:bg-gold hover:text-carbon transition-all duration-300 shadow-sm"
