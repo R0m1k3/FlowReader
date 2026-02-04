@@ -14,58 +14,24 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
         <article className="magazine-card group cursor-pointer flex flex-col h-full relative overflow-visible shadow-xl shadow-paper-muted/20 hover:shadow-2xl hover:shadow-gold/20 transition-all duration-500 rounded-xl border border-transparent hover:border-gold/10" onClick={() => onClick(article)}>
 
             {/* Unread Ribbon - "Paper Corner" Effect */}
+            {/* Unread Ribbon - Wrapping "Paper Corner" Effect */}
             {!article.is_read && (
-                <div className="absolute -top-1.5 -right-1.5 z-50 w-24 h-24 overflow-hidden pointer-events-none">
-                    {/* The darker 'fold' triangle behind */}
-                    <div className="absolute top-0 left-0 w-2 h-2 bg-yellow-900 rotate-45 transform translate-x-12 translate-y-[-4px]"></div>
-                    <div className="absolute bottom-0 right-0 w-2 h-2 bg-yellow-900 rotate-45 transform translate-x-[4px] translate-y-[-12px]"></div>
-
-                    {/* The Ribbon */}
-                    <div className="absolute top-0 right-0 bg-gold text-carbon text-[10px] font-black uppercase tracking-widest py-1.5 w-32 text-center transform translate-x-[30%] translate-y-[45%] rotate-45 shadow-md border-b-[1px] border-white/20">
+                <div className="absolute -top-2 -right-2 z-50 w-28 h-28 overflow-hidden pointer-events-none">
+                    {/* Ribbon */}
+                    <div className="absolute top-0 right-0 bg-gold text-carbon text-[10px] font-extrabold uppercase tracking-widest py-1.5 w-[140%] text-center transform translate-x-[35%] translate-y-[20%] rotate-45 shadow-lg shadow-black/20 border-b border-white/10">
                         Non Lu
                     </div>
-                    {/* Corner fold simulation (triangle darker) */}
-                    <div className="absolute top-0 right-0 w-1.5 h-1.5 bg-yellow-800/80"></div>
-                    <div className="absolute bottom-[5.5rem] right-0 w-1.5 h-1.5 bg-yellow-800/80"></div>
+                    {/* Darker Folds for "Wrapping" Effect */}
+                    <div className="absolute top-0 left-[2.9rem] w-2 h-2 bg-yellow-900 rotate-45 transform translate-x-0.5 -translate-y-1 z-[-1]"></div>
+                    <div className="absolute bottom-[2.9rem] right-0 w-2 h-2 bg-yellow-900 rotate-45 transform translate-x-1 -translate-y-0.5 z-[-1]"></div>
                 </div>
             )}
             {!article.is_read && (
+                /* External folds to complete the "behind" illusion if sticking out */
                 <>
-                    {/* Top Triangle Fold */}
-                    <div className="absolute -top-1.5 right-[5.25rem] w-1.5 h-1.5 bg-yellow-800 z-40 transform skew-x-45 md:hidden"></div>
-                    {/* Right Triangle Fold */}
-                    <div className="absolute top-[5.25rem] -right-1.5 w-1.5 h-1.5 bg-yellow-800 z-40 transform skew-y-45 md:hidden"></div>
+                    <div className="absolute -top-[5px] right-[58px] w-2 h-2 bg-yellow-800 rotate-45 z-40"></div>
+                    <div className="absolute top-[58px] -right-[5px] w-2 h-2 bg-yellow-800 rotate-45 z-40"></div>
                 </>
-            )}
-
-            {/* Cleaner Implementation: Standard CSS Ribbon with ::before/::after simulated by small divs for the 'behind' effect */}
-            {!article.is_read && (
-                <div className="absolute -top-2 -right-2 z-40 w-[100px] h-[100px] overflow-hidden rounded-tr-xl">
-                    {/* Ribbon background */}
-                    <div className="absolute top-[19px] -right-[23px] w-[120px] bg-gold text-carbon text-[10px] font-black uppercase tracking-widest text-center py-1 rotate-45 shadow-sm border border-y-gold-light/20">
-                        Non Lu
-                    </div>
-                </div>
-            )}
-            {/* Wait, the user wants 'pass behind'. That requires the ribbon to go OUTSIDE the box. 
-                My previous 'overflow-hidden' container clips it inside.
-                Let's use a non-clipped appraoch.
-            */}
-            {!article.is_read && (
-                <div className="absolute top-0 right-0 z-50">
-                    <div className="absolute top-0 right-0">
-                        {/* Fold Triangles (The parts that look like they go behind) */}
-                        <div className="absolute top-[-6px] right-[52px] w-0 h-0 border-l-[6px] border-l-transparent border-b-[6px] border-b-yellow-800 border-r-[6px] border-r-transparent transform rotate-[135deg]"></div>
-                        <div className="absolute top-[52px] right-[-6px] w-0 h-0 border-l-[6px] border-l-transparent border-b-[6px] border-b-yellow-800 border-r-[6px] border-r-transparent transform rotate-[135deg]"></div>
-
-                        {/* The main ribbon */}
-                        <div className="absolute top-[-6px] right-[-6px] w-[80px] h-[80px] overflow-hidden">
-                            <div className="absolute top-[18px] left-[-35px] w-[150px] bg-gold text-carbon text-[9px] font-black uppercase tracking-widest text-center py-1.5 transform rotate-45 shadow-[0_2px_4px_rgba(0,0,0,0.2)] border-t border-white/20">
-                                Non Lu
-                            </div>
-                        </div>
-                    </div>
-                </div>
             )}
 
             {/* Image Placeholder with Gold Overlay */}
