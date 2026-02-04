@@ -72,8 +72,8 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
                     </p>
                 )}
 
-                <div className="flex items-center justify-between pt-2">
-                    <div className="flex space-x-4">
+                <div className="flex items-center justify-between pt-2 border-t border-white/5 mt-4">
+                    <div className="flex space-x-2">
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
@@ -99,6 +99,15 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
                             </svg>
                         </button>
                     </div>
+
+                    <span className="text-[10px] text-paper-muted/60 font-medium tracking-wide">
+                        {new Date(article.published_at || article.created_at).toLocaleDateString('fr-FR', {
+                            day: 'numeric',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        })}
+                    </span>
                 </div>
             </div>
         </article>
