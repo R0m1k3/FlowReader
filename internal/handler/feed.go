@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -13,15 +15,17 @@ import (
 
 // FeedHandler handles feed-related HTTP requests.
 type FeedHandler struct {
-	feedService *service.FeedService
-	authService *service.AuthService
+	feedService  *service.FeedService
+	fetchService *service.FetchService
+	authService  *service.AuthService
 }
 
 // NewFeedHandler creates a new feed handler.
-func NewFeedHandler(feedService *service.FeedService, authService *service.AuthService) *FeedHandler {
+func NewFeedHandler(feedService *service.FeedService, fetchService *service.FetchService, authService *service.AuthService) *FeedHandler {
 	return &FeedHandler{
-		feedService: feedService,
-		authService: authService,
+		feedService:  feedService,
+		fetchService: fetchService,
+		authService:  authService,
 	}
 }
 
@@ -85,7 +89,37 @@ func (h *FeedHandler) Add(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Trigger immediate fetch in background
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		defer cancel()
+		_ = h.fetchService.FetchFeed(ctx, resp.ID)
+	}()
+
 	respondJSON(w, http.StatusCreated, resp)
+}
+
+// Refresh handles POST /api/v1/feeds/refresh
+func (h *FeedHandler) Refresh(w http.ResponseWriter, r *http.Request) {
+	userID, err := h.getUserFromRequest(r)
+	if err != nil {
+		respondError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	// For now, we refresh all feeds for the user synchronously or in background
+	// Let's do background and return 202 Accepted
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		defer cancel()
+
+		feeds, _ := h.feedService.GetUserFeeds(userID)
+		for _, f := range feeds {
+			_ = h.fetchService.FetchFeed(ctx, f.ID)
+		}
+	}()
+
+	respondJSON(w, http.StatusAccepted, map[string]string{"message": "Refresh started"})
 }
 
 // Get handles GET /api/v1/feeds/{id}

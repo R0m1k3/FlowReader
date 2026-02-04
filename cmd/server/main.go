@@ -55,7 +55,7 @@ func main() {
 
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(authService)
-	feedHandler := handler.NewFeedHandler(feedService, authService)
+	feedHandler := handler.NewFeedHandler(feedService, fetchService, authService)
 	articleHandler := handler.NewArticleHandler(articleRepo, feedService, authService, hub)
 	wsHandler := handler.NewWSHandler(hub, authService)
 	adminHandler := handler.NewAdminHandler(userRepo, authService)
@@ -109,6 +109,7 @@ func main() {
 		r.Route("/feeds", func(r chi.Router) {
 			r.Get("/", feedHandler.List)
 			r.Post("/", feedHandler.Add)
+			r.Post("/refresh", feedHandler.Refresh)
 			r.Post("/import/opml", feedHandler.ImportOPML)
 			r.Get("/export/opml", feedHandler.ExportOPML)
 			r.Get("/{id}", feedHandler.Get)

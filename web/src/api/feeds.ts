@@ -52,6 +52,14 @@ export const feedsApi = {
         await handleResponse(response);
     },
 
+    async refresh(): Promise<{ message: string }> {
+        const response = await fetch(`${API_BASE}/feeds/refresh`, {
+            method: 'POST',
+            credentials: 'include',
+        });
+        return handleResponse(response);
+    },
+
     async importOPML(file: File): Promise<{ imported: number; skipped: number; errors?: string[] }> {
         const formData = new FormData();
         formData.append('file', file);

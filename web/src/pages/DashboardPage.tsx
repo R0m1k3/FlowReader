@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { articlesApi } from '../api/articles';
+import { feedsApi } from '../api/feeds';
 import { ArticleCard } from '../components/ArticleCard';
 import { ReaderView } from '../components/ReaderView';
+import { useWebsocket } from '../hooks/useWebsocket';
 import type { Article } from '../api/articles';
 
 interface DashboardPageProps {
@@ -13,9 +15,21 @@ export function DashboardPage({ selectedFeedId }: DashboardPageProps) {
     const queryClient = useQueryClient();
     const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
 
+    // Real-time sync
+    useWebsocket();
+
     const { data: articles, isLoading } = useQuery({
         queryKey: ['articles', selectedFeedId],
         queryFn: () => articlesApi.list({ feed_id: selectedFeedId || undefined }),
+    });
+
+    const refreshMutation = useMutation({
+        mutationFn: () => feedsApi.refresh(),
+        onSuccess: () => {
+            // Optimistic feedback or just wait for WS? 
+            // In case WS fails, we invalid articles
+            queryClient.invalidateQueries({ queryKey: ['articles'] });
+        },
     });
 
     const toggleReadMutation = useMutation({
@@ -50,9 +64,18 @@ export function DashboardPage({ selectedFeedId }: DashboardPageProps) {
                                 {selectedFeedId ? 'Archives du Flux' : 'La Une'}
                             </h1>
                         </div>
-                        <div className="text-right">
-                            <p className="text-paper-muted text-xs font-serif italic">Mercredi 4 Février 2026</p>
-                            <p className="text-[10px] text-paper-muted/30 uppercase tracking-widest font-black mt-1">Volume IX • No. 42</p>
+                        <div className="flex flex-col items-end gap-3 text-right">
+                            <div>
+                                <p className="text-paper-muted text-xs font-serif italic">Mercredi 4 Février 2026</p>
+                                <p className="text-[10px] text-paper-muted/30 uppercase tracking-widest font-black mt-1">Volume IX • No. 42</p>
+                            </div>
+                            <button
+                                onClick={() => refreshMutation.mutate()}
+                                disabled={refreshMutation.isPending}
+                                className={`text-[10px] uppercase tracking-[0.2em] font-bold px-4 py-2 rounded-full border border-gold/20 text-gold hover:bg-gold/10 transition-all ${refreshMutation.isPending ? 'animate-pulse' : ''}`}
+                            >
+                                {refreshMutation.isPending ? 'Mise à jour...' : 'Mettre à jour'}
+                            </button>
                         </div>
                     </div>
                 </header>
