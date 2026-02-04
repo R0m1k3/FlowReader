@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { feedsApi } from '../api/feeds';
 import { AddFeedModal } from './AddFeedModal';
 
@@ -10,10 +10,29 @@ interface SidebarProps {
 
 export function Sidebar({ onSelectFeed, selectedFeedId }: SidebarProps) {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const queryClient = useQueryClient();
+
     const { data: feeds } = useQuery({
         queryKey: ['feeds'],
         queryFn: () => feedsApi.list(),
     });
+
+    const deleteFeedMutation = useMutation({
+        mutationFn: (id: string) => feedsApi.delete(id),
+        onSuccess: (_, deletedId) => {
+            queryClient.invalidateQueries({ queryKey: ['feeds'] });
+            if (selectedFeedId === deletedId) {
+                onSelectFeed(null);
+            }
+        },
+    });
+
+    const handleDelete = (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        if (window.confirm('Voulez-vous vraiment supprimer ce flux ?')) {
+            deleteFeedMutation.mutate(id);
+        }
+    };
 
     return (
         <>
@@ -34,8 +53,8 @@ export function Sidebar({ onSelectFeed, selectedFeedId }: SidebarProps) {
                         <button
                             onClick={() => onSelectFeed(null)}
                             className={`w-full group flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-300 ${selectedFeedId === null
-                                    ? 'bg-gold/10 text-gold-bright shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]'
-                                    : 'text-paper-muted hover:text-white hover:bg-white/5'
+                                ? 'bg-gold/10 text-gold-bright shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]'
+                                : 'text-paper-muted hover:text-white hover:bg-white/5'
                                 }`}
                         >
                             <span className="text-xs uppercase tracking-[0.2em] font-bold">Tout voir</span>
@@ -48,24 +67,37 @@ export function Sidebar({ onSelectFeed, selectedFeedId }: SidebarProps) {
                         <h3 className="px-4 text-[10px] uppercase tracking-[0.3em] font-black text-paper-muted/30 mb-4">Bibliothèque</h3>
                         <div className="space-y-1">
                             {feeds?.map((feed) => (
-                                <button
-                                    key={feed.id}
-                                    onClick={() => onSelectFeed(feed.id)}
-                                    className={`w-full group flex items-center justify-between px-4 py-2.5 rounded-lg transition-all duration-300 text-left ${selectedFeedId === feed.id
+                                <div key={feed.id} className="relative group/item">
+                                    <button
+                                        onClick={() => onSelectFeed(feed.id)}
+                                        className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg transition-all duration-300 text-left ${selectedFeedId === feed.id
                                             ? 'bg-gold/10 text-gold-bright'
                                             : 'text-paper-muted hover:text-white hover:bg-white/5'
-                                        }`}
-                                >
-                                    <span className="text-sm font-medium truncate flex items-center">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-gold/40 mr-3 opacity-0 group-hover:opacity-100 transition-opacity"></span>
-                                        {feed.title}
-                                    </span>
-                                    {(feed.unread_count ?? 0) > 0 && (
-                                        <span className="bg-gold/20 text-gold text-[10px] px-1.5 py-0.5 rounded-full min-w-[1.2rem] text-center font-bold">
-                                            {feed.unread_count}
+                                            }`}
+                                    >
+                                        <span className="text-sm font-medium truncate flex items-center">
+                                            <span className={`w-1.5 h-1.5 rounded-full bg-gold/40 mr-3 transition-opacity ${selectedFeedId === feed.id ? 'opacity-100' : 'opacity-0 group-hover/item:opacity-100'}`}></span>
+                                            {feed.title}
                                         </span>
-                                    )}
-                                </button>
+
+                                        <div className="flex items-center space-x-2">
+                                            {(feed.unread_count ?? 0) > 0 && (
+                                                <span className="bg-gold/20 text-gold text-[10px] px-1.5 py-0.5 rounded-full min-w-[1.2rem] text-center font-bold">
+                                                    {feed.unread_count}
+                                                </span>
+                                            )}
+                                            <button
+                                                onClick={(e) => handleDelete(e, feed.id)}
+                                                className="opacity-0 group-hover/item:opacity-50 hover:!opacity-100 p-1 text-red-400 transition-all duration-300 transform scale-75 hover:scale-100"
+                                                title="Supprimer le flux"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </button>
+                                </div>
                             ))}
                         </div>
                     </div>
