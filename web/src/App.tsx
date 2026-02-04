@@ -5,28 +5,26 @@ import { useAuthStore } from './stores/authStore';
 import { authApi } from './api/auth';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
-import { DashboardPage } from './pages/DashboardPage';
+import { RootLayout } from './layouts/RootLayout';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import './App.css';
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      staleTime: 5 * 60 * 1000,
     },
   },
 });
 
 function AuthChecker({ children }: { children: React.ReactNode }) {
-  const { setUser, setLoading } = useAuthStore();
+  const setUser = useAuthStore((state) => state.setUser);
 
   useEffect(() => {
-    // Check if user is authenticated on app load
     authApi.getMe()
       .then((user) => setUser(user))
       .catch(() => setUser(null));
-  }, [setUser, setLoading]);
+  }, [setUser]);
 
   return <>{children}</>;
 }
@@ -40,7 +38,7 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route element={<ProtectedRoute />}>
-              <Route path="/" element={<DashboardPage />} />
+              <Route path="/" element={<RootLayout />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
