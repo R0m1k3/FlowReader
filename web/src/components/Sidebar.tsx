@@ -31,9 +31,22 @@ export function Sidebar({ onSelectFeed, selectedFeedId }: SidebarProps) {
         },
     });
 
-    // ... (deleteFeedMutation)
+    const deleteFeedMutation = useMutation({
+        mutationFn: (id: string) => feedsApi.delete(id),
+        onSuccess: (_, deletedId) => {
+            queryClient.invalidateQueries({ queryKey: ['feeds'] });
+            if (selectedFeedId === deletedId) {
+                onSelectFeed(null);
+            }
+        },
+    });
 
-    // ...
+    const handleDelete = (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        if (window.confirm('Voulez-vous vraiment supprimer ce flux ?')) {
+            deleteFeedMutation.mutate(id);
+        }
+    };
 
     return (
         <>
