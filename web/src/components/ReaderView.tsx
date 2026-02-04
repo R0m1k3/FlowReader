@@ -19,11 +19,11 @@ export function ReaderView({ article, onClose, onToggleFavorite }: ReaderViewPro
 
     return (
         <div
-            className="fixed inset-0 z-50 bg-carbon/95 backdrop-blur-md flex justify-center overflow-y-auto animate-in fade-in duration-500"
+            className="fixed inset-0 z-50 bg-carbon/95 backdrop-blur-md flex justify-center items-start overflow-y-auto animate-in fade-in duration-500"
             onClick={onClose}
         >
             <div
-                className="w-full max-w-4xl bg-carbon-light min-h-screen my-0 md:my-12 shadow-[0_0_100px_rgba(0,0,0,0.8)] relative animate-in slide-in-from-bottom duration-700 rounded-t-3xl md:rounded-3xl border border-white/5"
+                className="w-full max-w-4xl bg-carbon-light h-fit min-h-[50vh] my-12 shadow-[0_0_100px_rgba(0,0,0,0.8)] relative animate-in slide-in-from-bottom duration-700 rounded-3xl border border-white/5"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Progress bar simulation */}
