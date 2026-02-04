@@ -38,12 +38,15 @@ func main() {
 	// Initialize repositories
 	userRepo := repository.NewUserRepository(pool)
 	sessionRepo := repository.NewSessionRepository(pool)
+	feedRepo := repository.NewFeedRepository(pool)
 
 	// Initialize services
 	authService := service.NewAuthService(userRepo, sessionRepo)
+	feedService := service.NewFeedService(feedRepo)
 
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(authService)
+	feedHandler := handler.NewFeedHandler(feedService, authService)
 
 	// Initialize router
 	r := chi.NewRouter()
@@ -83,6 +86,14 @@ func main() {
 		// User routes
 		r.Route("/users", func(r chi.Router) {
 			r.Get("/me", authHandler.Me)
+		})
+
+		// Feed routes
+		r.Route("/feeds", func(r chi.Router) {
+			r.Get("/", feedHandler.List)
+			r.Post("/", feedHandler.Add)
+			r.Get("/{id}", feedHandler.Get)
+			r.Delete("/{id}", feedHandler.Delete)
 		})
 	})
 
