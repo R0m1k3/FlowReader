@@ -7,6 +7,9 @@ import (
 	"net/http"
 	"time"
 
+	"strings"
+
+	"github.com/PuerkitoBio/goquery"
 	"github.com/google/uuid"
 	"github.com/michael/flowreader/internal/domain"
 	"github.com/mmcdole/gofeed"
@@ -108,6 +111,8 @@ func (p *FeedParser) Parse(ctx context.Context, feedURL string, feedID uuid.UUID
 
 		if item.Image != nil && item.Image.URL != "" {
 			article.ImageURL = item.Image.URL
+		} else {
+			article.ImageURL = findImage(item)
 		}
 
 		if item.PublishedParsed != nil {
@@ -133,4 +138,45 @@ func getGUID(item *gofeed.Item) string {
 		return item.Link
 	}
 	return item.Title // Last resort fallback
+}
+
+// findImage attempts to find the best image for a feed item.
+func findImage(item *gofeed.Item) string {
+	// 1. Check Enclosures
+	for _, enc := range item.Enclosures {
+		if strings.HasPrefix(enc.Type, "image/") {
+			return enc.URL
+		}
+	}
+
+	// 2. Check Media Extensions (media:content, media:thumbnail)
+	if media, ok := item.Extensions["media"]; ok {
+		if content, ok := media["content"]; ok && len(content) > 0 {
+			if url := content[0].Attrs["url"]; url != "" {
+				return url
+			}
+		}
+		if thumbnail, ok := media["thumbnail"]; ok && len(thumbnail) > 0 {
+			if url := thumbnail[0].Attrs["url"]; url != "" {
+				return url
+			}
+		}
+	}
+
+	// 3. Extract from Content/Description as fallback
+	htmlContent := item.Content
+	if htmlContent == "" {
+		htmlContent = item.Description
+	}
+
+	if htmlContent != "" {
+		doc, err := goquery.NewDocumentFromReader(strings.NewReader(htmlContent))
+		if err == nil {
+			if imgURL, exists := doc.Find("img").First().Attr("src"); exists {
+				return imgURL
+			}
+		}
+	}
+
+	return ""
 }

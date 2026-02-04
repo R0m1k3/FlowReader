@@ -16,8 +16,14 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
             <div className="aspect-[16/10] overflow-hidden rounded-xl bg-carbon-light relative mb-6">
                 <div className="absolute inset-0 bg-gradient-to-t from-carbon-dark/80 via-transparent to-transparent opacity-60 z-10"></div>
 
-                {/* Visual placeholder */}
-                <div className="w-full h-full bg-[url('https://images.unsplash.com/photo-1586339949916-3e9457bef6d3?auto=format&fit=crop&q=80&w=800')] bg-cover bg-center transition-transform duration-700 group-hover:scale-105 opacity-40"></div>
+                {/* Visual placeholder or real image */}
+                <div
+                    className="w-full h-full bg-cover bg-center transition-transform duration-700 group-hover:scale-105 opacity-60"
+                    style={{
+                        backgroundImage: `url(${article.image_url || 'https://images.unsplash.com/photo-1586339949916-3e9457bef6d3?auto=format&fit=crop&q=80&w=800'})`,
+                        backgroundColor: '#1e1e1e'
+                    }}
+                ></div>
 
                 {/* Meta on top of image */}
                 <div className="absolute bottom-4 left-4 right-4 z-20 flex justify-between items-end">
