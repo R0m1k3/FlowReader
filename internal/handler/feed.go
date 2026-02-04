@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/michael/flowreader/internal/opml"
 	"github.com/michael/flowreader/internal/service"
 )
 
@@ -145,4 +146,88 @@ func (h *FeedHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondJSON(w, http.StatusOK, map[string]string{"message": "Feed deleted"})
+}
+
+// ImportOPML handles POST /api/v1/feeds/import/opml
+func (h *FeedHandler) ImportOPML(w http.ResponseWriter, r *http.Request) {
+	userID, err := h.getUserFromRequest(r)
+	if err != nil {
+		respondError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	// Parse multipart form (max 10MB)
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid form data")
+		return
+	}
+
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "No file provided")
+		return
+	}
+	defer file.Close()
+
+	// Parse OPML
+	feeds, err := opml.Parse(file)
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid OPML file: "+err.Error())
+		return
+	}
+
+	// Convert to service format
+	var opmlFeeds []service.OPMLFeedInfo
+	for _, f := range feeds {
+		opmlFeeds = append(opmlFeeds, service.OPMLFeedInfo{
+			URL:     f.URL,
+			Title:   f.Title,
+			SiteURL: f.SiteURL,
+		})
+	}
+
+	// Import feeds
+	result, err := h.feedService.ImportOPML(userID, opmlFeeds)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "Import failed")
+		return
+	}
+
+	respondJSON(w, http.StatusOK, result)
+}
+
+// ExportOPML handles GET /api/v1/feeds/export/opml
+func (h *FeedHandler) ExportOPML(w http.ResponseWriter, r *http.Request) {
+	userID, err := h.getUserFromRequest(r)
+	if err != nil {
+		respondError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	feeds, err := h.feedService.GetUserFeeds(userID)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "Failed to get feeds")
+		return
+	}
+
+	// Convert to OPML format
+	var opmlFeeds []opml.FeedInfo
+	for _, f := range feeds {
+		opmlFeeds = append(opmlFeeds, opml.FeedInfo{
+			URL:     f.URL,
+			Title:   f.Title,
+			SiteURL: f.SiteURL,
+		})
+	}
+
+	// Generate OPML
+	data, err := opml.Generate("FlowReader Feeds", opmlFeeds)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "Failed to generate OPML")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/xml")
+	w.Header().Set("Content-Disposition", "attachment; filename=flowreader-feeds.opml")
+	w.Write(data)
 }

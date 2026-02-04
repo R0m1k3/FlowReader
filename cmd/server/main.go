@@ -92,6 +92,8 @@ func main() {
 		r.Route("/feeds", func(r chi.Router) {
 			r.Get("/", feedHandler.List)
 			r.Post("/", feedHandler.Add)
+			r.Post("/import/opml", feedHandler.ImportOPML)
+			r.Get("/export/opml", feedHandler.ExportOPML)
 			r.Get("/{id}", feedHandler.Get)
 			r.Delete("/{id}", feedHandler.Delete)
 		})

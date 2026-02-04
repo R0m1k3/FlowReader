@@ -46,8 +46,8 @@ development_status:
   # Epic 2: Feed Core Engine
   epic-2: in-progress
   2-1-feed-model-add-feed-by-url: done
-  2-2-feed-metadata-auto-discovery: review
-  2-3-opml-import: backlog
+  2-2-feed-metadata-auto-discovery: done
+  2-3-opml-import: review
   2-4-feed-management-crud: backlog
   2-5-background-feed-fetcher: backlog
   epic-2-retrospective: optional

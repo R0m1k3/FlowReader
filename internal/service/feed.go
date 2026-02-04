@@ -128,3 +128,70 @@ func (s *FeedService) DeleteFeed(feedID, userID uuid.UUID) error {
 
 	return nil
 }
+
+// ImportOPMLResult contains the result of an OPML import.
+type ImportOPMLResult struct {
+	Imported int      `json:"imported"`
+	Skipped  int      `json:"skipped"`
+	Errors   []string `json:"errors,omitempty"`
+}
+
+// ImportOPML imports feeds from an OPML file.
+func (s *FeedService) ImportOPML(userID uuid.UUID, opmlFeeds []OPMLFeedInfo) (*ImportOPMLResult, error) {
+	result := &ImportOPMLResult{}
+
+	for _, opmlFeed := range opmlFeeds {
+		// Validate URL
+		_, err := url.ParseRequestURI(opmlFeed.URL)
+		if err != nil {
+			result.Errors = append(result.Errors, fmt.Sprintf("Invalid URL: %s", opmlFeed.URL))
+			result.Skipped++
+			continue
+		}
+
+		// Check if already exists
+		existing, err := s.feedRepo.GetByURL(userID, opmlFeed.URL)
+		if err != nil {
+			result.Errors = append(result.Errors, fmt.Sprintf("Error checking %s: %v", opmlFeed.URL, err))
+			result.Skipped++
+			continue
+		}
+		if existing != nil {
+			result.Skipped++
+			continue
+		}
+
+		// Create feed with title from OPML
+		now := time.Now()
+		feed := &domain.Feed{
+			ID:        uuid.New(),
+			UserID:    userID,
+			URL:       opmlFeed.URL,
+			Title:     opmlFeed.Title,
+			SiteURL:   opmlFeed.SiteURL,
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		if feed.Title == "" {
+			feed.Title = opmlFeed.URL
+		}
+
+		if err := s.feedRepo.Create(feed); err != nil {
+			result.Errors = append(result.Errors, fmt.Sprintf("Error creating %s: %v", opmlFeed.URL, err))
+			result.Skipped++
+			continue
+		}
+
+		result.Imported++
+	}
+
+	return result, nil
+}
+
+// OPMLFeedInfo contains feed info from OPML parsing.
+type OPMLFeedInfo struct {
+	URL     string
+	Title   string
+	SiteURL string
+}
