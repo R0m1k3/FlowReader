@@ -113,6 +113,7 @@ func main() {
 			r.Post("/import/opml", feedHandler.ImportOPML)
 			r.Get("/export/opml", feedHandler.ExportOPML)
 			r.Get("/{id}", feedHandler.Get)
+			r.Patch("/{id}", feedHandler.Update)
 			r.Delete("/{id}", feedHandler.Delete)
 			r.Get("/{id}/articles", articleHandler.ListByFeed)
 			r.Post("/{id}/read-all", articleHandler.MarkAllRead)

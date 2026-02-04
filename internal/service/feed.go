@@ -129,6 +129,30 @@ func (s *FeedService) DeleteFeed(feedID, userID uuid.UUID) error {
 	return nil
 }
 
+// UpdateFeed updates a feed's title.
+func (s *FeedService) UpdateFeed(feedID, userID uuid.UUID, title string) (*domain.Feed, error) {
+	feed, err := s.feedRepo.GetByID(feedID)
+	if err != nil {
+		return nil, fmt.Errorf("getting feed: %w", err)
+	}
+	if feed == nil {
+		return nil, ErrFeedNotFound
+	}
+	if feed.UserID != userID {
+		return nil, ErrUnauthorized
+	}
+
+	feed.Title = title
+	// UpdatedAt is handled by repo or we can set it here if we strictly follow domain logic, 
+    // but repo.Update sets it to time.Now().
+
+	if err := s.feedRepo.Update(feed); err != nil {
+		return nil, fmt.Errorf("updating feed: %w", err)
+	}
+
+	return feed, nil
+}
+
 // ImportOPMLResult contains the result of an OPML import.
 type ImportOPMLResult struct {
 	Imported int      `json:"imported"`

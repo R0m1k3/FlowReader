@@ -41,10 +41,25 @@ export function Sidebar({ onSelectFeed, selectedFeedId }: SidebarProps) {
         },
     });
 
+    const updateFeedMutation = useMutation({
+        mutationFn: ({ id, title }: { id: string; title: string }) => feedsApi.update(id, title),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['feeds'] });
+        },
+    });
+
     const handleDelete = (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
         if (window.confirm('Voulez-vous vraiment supprimer ce flux ?')) {
             deleteFeedMutation.mutate(id);
+        }
+    };
+
+    const handleRename = (e: React.MouseEvent, id: string, currentTitle: string) => {
+        e.stopPropagation();
+        const newTitle = window.prompt('Renommer le flux :', currentTitle);
+        if (newTitle && newTitle.trim() !== '' && newTitle !== currentTitle) {
+            updateFeedMutation.mutate({ id, title: newTitle });
         }
     };
 
@@ -96,6 +111,20 @@ export function Sidebar({ onSelectFeed, selectedFeedId }: SidebarProps) {
                     <div>
                         <h3 className="px-4 text-[10px] uppercase tracking-[0.3em] font-black text-paper-muted/30 mb-4">Bibliothèque</h3>
                         <div className="space-y-1">
+                            <div className="relative group/item mb-2">
+                                <button
+                                    onClick={() => onSelectFeed(null)}
+                                    className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg transition-all duration-300 text-left ${selectedFeedId === null
+                                        ? 'bg-gold/10 text-gold-bright'
+                                        : 'text-paper-muted hover:text-gold hover:bg-gold/5'
+                                        }`}
+                                >
+                                    <span className="text-sm font-medium truncate flex items-center">
+                                        <span className={`w-1.5 h-1.5 rounded-full bg-gold/40 mr-3 transition-opacity ${selectedFeedId === null ? 'opacity-100' : 'opacity-0 group-hover/item:opacity-100'}`}></span>
+                                        Tous les articles
+                                    </span>
+                                </button>
+                            </div>
                             {feeds?.map((feed) => (
                                 <div key={feed.id} className="relative group/item">
                                     <button
@@ -116,6 +145,15 @@ export function Sidebar({ onSelectFeed, selectedFeedId }: SidebarProps) {
                                                     {feed.unread_count}
                                                 </span>
                                             )}
+                                            <button
+                                                onClick={(e) => handleRename(e, feed.id, feed.title)}
+                                                className="opacity-0 group-hover/item:opacity-50 hover:!opacity-100 p-1 text-gold transition-all duration-300 transform scale-75 hover:scale-100"
+                                                title="Renommer le flux"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                </svg>
+                                            </button>
                                             <button
                                                 onClick={(e) => handleDelete(e, feed.id)}
                                                 className="opacity-0 group-hover/item:opacity-50 hover:!opacity-100 p-1 text-red-400 transition-all duration-300 transform scale-75 hover:scale-100"

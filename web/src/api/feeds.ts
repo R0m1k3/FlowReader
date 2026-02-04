@@ -44,6 +44,16 @@ export const feedsApi = {
         return handleResponse<Feed>(response);
     },
 
+    async update(id: string, title: string): Promise<Feed> {
+        const response = await fetch(`${API_BASE}/feeds/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ title }),
+        });
+        return handleResponse<Feed>(response);
+    },
+
     async delete(id: string): Promise<void> {
         const response = await fetch(`${API_BASE}/feeds/${id}`, {
             method: 'DELETE',

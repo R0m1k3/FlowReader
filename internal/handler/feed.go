@@ -182,6 +182,52 @@ func (h *FeedHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, map[string]string{"message": "Feed deleted"})
 }
 
+// UpdateRequest represents the request body for updating a feed.
+type UpdateRequest struct {
+	Title string `json:"title"`
+}
+
+// Update handles PATCH /api/v1/feeds/{id}
+func (h *FeedHandler) Update(w http.ResponseWriter, r *http.Request) {
+	userID, err := h.getUserFromRequest(r)
+	if err != nil {
+		respondError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	feedID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid feed ID")
+		return
+	}
+
+	var req UpdateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if req.Title == "" {
+		respondError(w, http.StatusBadRequest, "Title is required")
+		return
+	}
+
+	feed, err := h.feedService.UpdateFeed(feedID, userID, req.Title)
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrFeedNotFound):
+			respondError(w, http.StatusNotFound, "Feed not found")
+		case errors.Is(err, service.ErrUnauthorized):
+			respondError(w, http.StatusForbidden, "Access denied")
+		default:
+			respondError(w, http.StatusInternalServerError, "Failed to update feed")
+		}
+		return
+	}
+
+	respondJSON(w, http.StatusOK, feed)
+}
+
 // ImportOPML handles POST /api/v1/feeds/import/opml
 func (h *FeedHandler) ImportOPML(w http.ResponseWriter, r *http.Request) {
 	userID, err := h.getUserFromRequest(r)
