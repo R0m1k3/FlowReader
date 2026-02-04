@@ -1,0 +1,43 @@
+services:
+  app:
+    # Utilise l'image construite par GitHub Actions
+    image: ghcr.io/r0m1k3/flowreader:latest
+    container_name: flowreader-app
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - DATABASE_URL=postgres://flowreader:flowreader@db:5432/flowreader?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    # Mappage des logs si nécessaire
+    # volumes:
+    #   - /mnt/user/appdata/flowreader/logs:/app/logs
+
+  db:
+    image: postgres:16-alpine
+    container_name: flowreader-db
+    environment:
+      - POSTGRES_USER=flowreader
+      - POSTGRES_PASSWORD=flowreader
+      - POSTGRES_DB=flowreader
+    volumes:
+      # Persistance des données sur Unraid (chemin typique)
+      - /mnt/user/appdata/flowreader/postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U flowreader -d flowreader" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    command: >
+      postgres -c shared_buffers=24MB -c max_connections=20 -c work_mem=2MB
+
+# Pas de volumes nommés globaux si on utilise des bind mounts directs pour Unraid

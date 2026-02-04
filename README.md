@@ -14,6 +14,22 @@ make docker-up
 
 Access the API: `http://localhost:8080`
 
+## Deployment
+
+### Unraid
+
+A dedicated configuration file `docker-compose.unraid.yaml` is provided for Unraid servers. It pulls the pre-built image from GitHub Container Registry.
+
+1. Copy **only** `docker-compose.unraid.yaml` to your Unraid server (e.g. into `/mnt/user/appdata/flowreader`).
+2. Run with Docker Compose:
+
+```bash
+docker-compose -f docker-compose.unraid.yaml up -d
+```
+
+Note: The configuration uses `/mnt/user/appdata/flowreader/postgres_data` for database persistence.
+
+
 ## Development
 
 ```bash
