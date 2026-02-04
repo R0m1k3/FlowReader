@@ -26,18 +26,30 @@ func NewUserRepository(pool *pgxpool.Pool) *UserRepository {
 func (r *UserRepository) Create(user *domain.User) error {
 	ctx := context.Background()
 
+	// Check if this is the first user
+	var count int
+	err := r.pool.QueryRow(ctx, "SELECT COUNT(*) FROM users").Scan(&count)
+	if err != nil {
+		return fmt.Errorf("counting users: %w", err)
+	}
+
+	if count == 0 {
+		user.Role = domain.RoleAdmin
+	} else if user.Role == "" {
+		user.Role = domain.RoleUser
+	}
+
 	query := `
-		INSERT INTO users (id, email, password_hash, is_admin, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO users (id, email, password_hash, created_at, role)
+		VALUES ($1, $2, $3, $4, $5)
 	`
 
-	_, err := r.pool.Exec(ctx, query,
+	_, err = r.pool.Exec(ctx, query,
 		user.ID,
 		user.Email,
 		user.PasswordHash,
-		user.IsAdmin,
 		user.CreatedAt,
-		user.UpdatedAt,
+		user.Role,
 	)
 
 	if err != nil {
@@ -52,7 +64,7 @@ func (r *UserRepository) GetByEmail(email string) (*domain.User, error) {
 	ctx := context.Background()
 
 	query := `
-		SELECT id, email, password_hash, is_admin, created_at, updated_at
+		SELECT id, email, password_hash, created_at, role
 		FROM users
 		WHERE email = $1
 	`
@@ -62,9 +74,8 @@ func (r *UserRepository) GetByEmail(email string) (*domain.User, error) {
 		&user.ID,
 		&user.Email,
 		&user.PasswordHash,
-		&user.IsAdmin,
 		&user.CreatedAt,
-		&user.UpdatedAt,
+		&user.Role,
 	)
 
 	if err != nil {
@@ -82,7 +93,7 @@ func (r *UserRepository) GetByID(id uuid.UUID) (*domain.User, error) {
 	ctx := context.Background()
 
 	query := `
-		SELECT id, email, password_hash, is_admin, created_at, updated_at
+		SELECT id, email, password_hash, created_at, role
 		FROM users
 		WHERE id = $1
 	`
@@ -92,9 +103,8 @@ func (r *UserRepository) GetByID(id uuid.UUID) (*domain.User, error) {
 		&user.ID,
 		&user.Email,
 		&user.PasswordHash,
-		&user.IsAdmin,
 		&user.CreatedAt,
-		&user.UpdatedAt,
+		&user.Role,
 	)
 
 	if err != nil {
@@ -107,7 +117,40 @@ func (r *UserRepository) GetByID(id uuid.UUID) (*domain.User, error) {
 	return &user, nil
 }
 
-// Exists checks if a user with the given email exists.
+// List retrieves all users.
+func (r *UserRepository) List() ([]*domain.User, error) {
+	ctx := context.Background()
+	query := `SELECT id, email, created_at, role FROM users ORDER BY created_at ASC`
+
+	rows, err := r.pool.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("listing users: %w", err)
+	}
+	defer rows.Close()
+
+	var users []*domain.User
+	for rows.Next() {
+		var u domain.User
+		if err := rows.Scan(&u.ID, &u.Email, &u.CreatedAt, &u.Role); err != nil {
+			return nil, fmt.Errorf("scanning user: %w", err)
+		}
+		users = append(users, &u)
+	}
+
+	return users, nil
+}
+
+// Delete removes a user and their data (cascaded by DB).
+func (r *UserRepository) Delete(id uuid.UUID) error {
+	ctx := context.Background()
+	_, err := r.pool.Exec(ctx, "DELETE FROM users WHERE id = $1", id)
+	if err != nil {
+		return fmt.Errorf("deleting user: %w", err)
+	}
+	return nil
+}
+
+// Exists checks if an email already exists.
 func (r *UserRepository) Exists(email string) (bool, error) {
 	ctx := context.Background()
 

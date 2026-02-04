@@ -9,6 +9,7 @@ import (
 	"github.com/michael/flowreader/internal/domain"
 	"github.com/michael/flowreader/internal/service"
 	"github.com/michael/flowreader/internal/utils"
+	"github.com/michael/flowreader/internal/ws"
 )
 
 // ArticleHandler handles article-related HTTP requests.
@@ -17,15 +18,17 @@ type ArticleHandler struct {
 	feedService *service.FeedService
 	authService *service.AuthService
 	sanitizer   *utils.ContentSanitizer
+	hub         *ws.Hub
 }
 
 // NewArticleHandler creates a new article handler.
-func NewArticleHandler(articleRepo domain.ArticleRepository, feedService *service.FeedService, authService *service.AuthService) *ArticleHandler {
+func NewArticleHandler(articleRepo domain.ArticleRepository, feedService *service.FeedService, authService *service.AuthService, hub *ws.Hub) *ArticleHandler {
 	return &ArticleHandler{
 		articleRepo: articleRepo,
 		feedService: feedService,
 		authService: authService,
 		sanitizer:   utils.NewContentSanitizer(),
+		hub:         hub,
 	}
 }
 
@@ -184,6 +187,14 @@ func (h *ArticleHandler) MarkRead(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Broadcast update
+	if h.hub != nil {
+		h.hub.Broadcast("article_updated", map[string]interface{}{
+			"id":      articleID,
+			"is_read": true,
+		})
+	}
+
 	respondJSON(w, http.StatusOK, map[string]bool{"is_read": true})
 }
 
@@ -219,6 +230,14 @@ func (h *ArticleHandler) MarkUnread(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Broadcast update
+	if h.hub != nil {
+		h.hub.Broadcast("article_updated", map[string]interface{}{
+			"id":      articleID,
+			"is_read": false,
+		})
+	}
+
 	respondJSON(w, http.StatusOK, map[string]bool{"is_read": false})
 }
 
@@ -252,6 +271,14 @@ func (h *ArticleHandler) ToggleFavorite(w http.ResponseWriter, r *http.Request) 
 	if err := h.articleRepo.ToggleFavorite(articleID); err != nil {
 		respondError(w, http.StatusInternalServerError, "Failed to toggle favorite")
 		return
+	}
+
+	// Broadcast update
+	if h.hub != nil {
+		h.hub.Broadcast("article_updated", map[string]interface{}{
+			"id":          articleID,
+			"is_favorite": !article.IsFavorite,
+		})
 	}
 
 	respondJSON(w, http.StatusOK, map[string]bool{"is_favorite": !article.IsFavorite})

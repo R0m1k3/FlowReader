@@ -19,7 +19,7 @@ export function useWebsocket() {
                     const data = JSON.parse(event.data);
                     console.log('WS Message:', data);
 
-                    if (data.type === 'new_articles') {
+                    if (data.type === 'new_articles' || data.type === 'article_updated') {
                         // Invalidate articles and feeds query to trigger refetch
                         queryClient.invalidateQueries({ queryKey: ['articles'] });
                         queryClient.invalidateQueries({ queryKey: ['feeds'] });

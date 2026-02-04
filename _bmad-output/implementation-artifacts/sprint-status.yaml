@@ -63,9 +63,9 @@ development_status:
   epic-3-retrospective: optional
 
   # Epic 4: Advanced Systems & Robustness
-  epic-4: backlog
-  4-1-multi-device-sync: backlog
-  4-2-admin-user-list: backlog
-  4-3-delete-user-account: backlog
-  4-4-performance-ram-optimization: backlog
+  epic-4: done
+  4-1-multi-device-sync: done
+  4-2-admin-user-list: done
+  4-3-delete-user-account: done
+  4-4-performance-ram-optimization: done
   epic-4-retrospective: optional

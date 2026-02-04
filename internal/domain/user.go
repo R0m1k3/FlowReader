@@ -15,12 +15,20 @@ type User struct {
 	IsAdmin      bool      `json:"is_admin"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
+	Role         string    `json:"role"`
 }
 
-// UserRepository defines the interface for user data access.
+const (
+	RoleAdmin = "admin"
+	RoleUser  = "user"
+)
+
+// UserRepository defines the interface for user persistence.ss.
 type UserRepository interface {
 	Create(user *User) error
 	GetByEmail(email string) (*User, error)
 	GetByID(id uuid.UUID) (*User, error)
 	Exists(email string) (bool, error)
+	List() ([]*User, error)
+	Delete(id uuid.UUID) error
 }

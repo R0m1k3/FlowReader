@@ -56,8 +56,9 @@ func main() {
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(authService)
 	feedHandler := handler.NewFeedHandler(feedService, authService)
-	articleHandler := handler.NewArticleHandler(articleRepo, feedService, authService)
+	articleHandler := handler.NewArticleHandler(articleRepo, feedService, authService, hub)
 	wsHandler := handler.NewWSHandler(hub, authService)
+	adminHandler := handler.NewAdminHandler(userRepo, authService)
 
 	// Start background feed fetcher
 	fetcher := worker.NewFeedFetcher(fetchService, 15*time.Minute, 5)
@@ -129,6 +130,13 @@ func main() {
 
 		// WebSocket route
 		r.Get("/ws", wsHandler.Connect)
+
+		// Admin routes
+		r.Route("/admin", func(r chi.Router) {
+			r.Use(adminHandler.AdminOnly)
+			r.Get("/users", adminHandler.ListUsers)
+			r.Delete("/users/{id}", adminHandler.DeleteUser)
+		})
 	})
 
 	// Create server
