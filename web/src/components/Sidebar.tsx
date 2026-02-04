@@ -54,7 +54,7 @@ export function Sidebar({ onSelectFeed, selectedFeedId }: SidebarProps) {
                             onClick={() => onSelectFeed(null)}
                             className={`w-full group flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-300 ${selectedFeedId === null
                                 ? 'bg-gold/10 text-gold-bright shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]'
-                                : 'text-paper-muted hover:text-white hover:bg-white/5'
+                                : 'text-paper-muted hover:text-gold hover:bg-gold/5'
                                 }`}
                         >
                             <span className="text-xs uppercase tracking-[0.2em] font-bold">Tout voir</span>
@@ -72,7 +72,7 @@ export function Sidebar({ onSelectFeed, selectedFeedId }: SidebarProps) {
                                         onClick={() => onSelectFeed(feed.id)}
                                         className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg transition-all duration-300 text-left ${selectedFeedId === feed.id
                                             ? 'bg-gold/10 text-gold-bright'
-                                            : 'text-paper-muted hover:text-white hover:bg-white/5'
+                                            : 'text-paper-muted hover:text-gold hover:bg-gold/5'
                                             }`}
                                     >
                                         <span className="text-sm font-medium truncate flex items-center">
