@@ -16,6 +16,7 @@ import (
 	"github.com/michael/flowreader/internal/handler"
 	"github.com/michael/flowreader/internal/repository"
 	"github.com/michael/flowreader/internal/service"
+	"github.com/michael/flowreader/internal/worker"
 )
 
 func main() {
@@ -39,14 +40,22 @@ func main() {
 	userRepo := repository.NewUserRepository(pool)
 	sessionRepo := repository.NewSessionRepository(pool)
 	feedRepo := repository.NewFeedRepository(pool)
+	articleRepo := repository.NewArticleRepository(pool)
 
 	// Initialize services
 	authService := service.NewAuthService(userRepo, sessionRepo)
 	feedService := service.NewFeedService(feedRepo)
+	fetchService := service.NewFetchService(feedRepo, articleRepo)
 
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(authService)
 	feedHandler := handler.NewFeedHandler(feedService, authService)
+	articleHandler := handler.NewArticleHandler(articleRepo, feedService, authService)
+
+	// Start background feed fetcher
+	fetcher := worker.NewFeedFetcher(fetchService, 15*time.Minute, 5)
+	fetcher.Start()
+	defer fetcher.Stop()
 
 	// Initialize router
 	r := chi.NewRouter()
@@ -96,6 +105,18 @@ func main() {
 			r.Get("/export/opml", feedHandler.ExportOPML)
 			r.Get("/{id}", feedHandler.Get)
 			r.Delete("/{id}", feedHandler.Delete)
+			r.Get("/{id}/articles", articleHandler.ListByFeed)
+			r.Post("/{id}/read-all", articleHandler.MarkAllRead)
+		})
+
+		// Article routes
+		r.Route("/articles", func(r chi.Router) {
+			r.Get("/", articleHandler.List)
+			r.Get("/favorites", articleHandler.GetFavorites)
+			r.Get("/{id}", articleHandler.Get)
+			r.Post("/{id}/read", articleHandler.MarkRead)
+			r.Delete("/{id}/read", articleHandler.MarkUnread)
+			r.Post("/{id}/favorite", articleHandler.ToggleFavorite)
 		})
 	})
 

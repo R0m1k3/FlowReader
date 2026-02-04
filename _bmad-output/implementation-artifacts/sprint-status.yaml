@@ -47,9 +47,9 @@ development_status:
   epic-2: in-progress
   2-1-feed-model-add-feed-by-url: done
   2-2-feed-metadata-auto-discovery: done
-  2-3-opml-import: review
-  2-4-feed-management-crud: backlog
-  2-5-background-feed-fetcher: backlog
+  2-3-opml-import: done
+  2-4-feed-management-crud: done
+  2-5-background-feed-fetcher: review
   epic-2-retrospective: optional
 
   # Epic 3: Lecture Plaisir & Real-Time Experience
