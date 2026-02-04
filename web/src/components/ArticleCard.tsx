@@ -11,19 +11,26 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
     const timeToRead = Math.ceil((article.content?.length || 500) / 1000) + 1;
 
     return (
-        <article className="magazine-card group cursor-pointer break-inside-avoid mb-8" onClick={() => onClick(article)}>
+        <article className="magazine-card group cursor-pointer break-inside-avoid mb-8 hover:shadow-2xl hover:shadow-gold/10 transition-shadow duration-500 rounded-xl" onClick={() => onClick(article)}>
             {/* Image Placeholder with Gold Overlay */}
             <div className="aspect-[16/10] overflow-hidden rounded-xl bg-carbon-light relative mb-6">
                 <div className="absolute inset-0 bg-gradient-to-t from-carbon-dark/80 via-transparent to-transparent opacity-60 z-10"></div>
 
                 {/* Visual placeholder or real image */}
                 <div
-                    className="w-full h-full bg-cover bg-center transition-transform duration-700 group-hover:scale-105 opacity-60"
+                    className="w-full h-full bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
                     style={{
                         backgroundImage: `url(${article.image_url || 'https://images.unsplash.com/photo-1586339949916-3e9457bef6d3?auto=format&fit=crop&q=80&w=800'})`,
-                        backgroundColor: '#1e1e1e'
+                        backgroundColor: '#f0f0f0'
                     }}
                 ></div>
+
+                {/* Unread Badge */}
+                {!article.is_read && (
+                    <div className="absolute top-4 right-4 z-20 bg-gold text-carbon text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-carbon/20 shadow-lg">
+                        Non lu
+                    </div>
+                )}
 
                 {/* Meta on top of image */}
                 <div className="absolute bottom-4 left-4 right-4 z-20 flex justify-between items-end">
@@ -38,7 +45,9 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
 
             {/* Content */}
             <div className="space-y-4 px-1">
-                <h2 className={`text-xl font-serif italic transition-colors duration-300 group-hover:text-gold ${article.is_read ? 'text-paper-muted font-normal' : 'text-paper-white font-bold'}`}>
+                <h2 className={`text-xl font-serif italic transition-colors duration-300 group-hover:text-gold ${article.is_read ? 'text-paper-muted font-normal' : 'text-paper-white font-bold'}`}
+                    style={article.is_read ? {} : { textShadow: '0 1px 1px rgba(0,0,0,0.1)' }}
+                >
                     {article.title}
                 </h2>
 
@@ -55,7 +64,7 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
                                 e.stopPropagation();
                                 onToggleRead(article.id, !article.is_read);
                             }}
-                            className={`p-1.5 rounded-full transition-all duration-300 ${article.is_read ? 'text-gold/40 border border-gold/10' : 'text-gold hover:bg-gold/10 border border-transparent hover:border-gold/20'}`}
+                            className={`p-1.5 rounded-full transition-all duration-300 border ${article.is_read ? 'text-gold/40 border-gold/10' : 'text-gold bg-gold/10 border-carbon/20 hover:bg-gold/20'}`}
                             title={article.is_read ? "Marquer comme non lu" : "Marquer comme lu"}
                         >
                             <svg className="w-4 h-4" fill={article.is_read ? "none" : "currentColor"} viewBox="0 0 24 24" stroke="currentColor">
