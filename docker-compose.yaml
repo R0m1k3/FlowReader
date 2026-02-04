@@ -1,0 +1,46 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - DATABASE_URL=postgres://flowreader:flowreader@db:5432/flowreader?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=flowreader
+      - POSTGRES_PASSWORD=flowreader
+      - POSTGRES_DB=flowreader
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flowreader -d flowreader"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    # RAM Optimization (from Architecture NFR1)
+    command: >
+      postgres
+      -c shared_buffers=24MB
+      -c max_connections=20
+      -c work_mem=2MB
+
+volumes:
+  postgres_data:
