@@ -1,12 +1,6 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { feedsApi } from '../api/feeds';
-import { AddFeedModal } from './AddFeedModal';
+import { articlesApi } from '../api/articles';
 
-interface SidebarProps {
-    onSelectFeed: (feedId: string | null) => void;
-    selectedFeedId: string | null;
-}
+// ... (existing imports)
 
 export function Sidebar({ onSelectFeed, selectedFeedId }: SidebarProps) {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -17,22 +11,22 @@ export function Sidebar({ onSelectFeed, selectedFeedId }: SidebarProps) {
         queryFn: () => feedsApi.list(),
     });
 
-    const deleteFeedMutation = useMutation({
-        mutationFn: (id: string) => feedsApi.delete(id),
-        onSuccess: (_, deletedId) => {
-            queryClient.invalidateQueries({ queryKey: ['feeds'] });
-            if (selectedFeedId === deletedId) {
-                onSelectFeed(null);
+    const markAllReadMutation = useMutation({
+        mutationFn: () => {
+            if (selectedFeedId) {
+                return articlesApi.markAllRead(selectedFeedId);
             }
+            return articlesApi.markAllReadGlobal();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['feeds'] });
+            queryClient.invalidateQueries({ queryKey: ['articles'] });
         },
     });
 
-    const handleDelete = (e: React.MouseEvent, id: string) => {
-        e.stopPropagation();
-        if (window.confirm('Voulez-vous vraiment supprimer ce flux ?')) {
-            deleteFeedMutation.mutate(id);
-        }
-    };
+    // ... (deleteFeedMutation)
+
+    // ...
 
     return (
         <>
@@ -40,8 +34,9 @@ export function Sidebar({ onSelectFeed, selectedFeedId }: SidebarProps) {
                 <div className="p-8 pb-4">
                     <div className="flex items-center justify-between mb-8">
                         <h1
-                            className="text-gold text-3xl font-serif italic tracking-tight"
+                            className="text-gold text-3xl font-serif italic tracking-tight cursor-pointer hover:opacity-80 transition-opacity"
                             style={{ textShadow: '1px 1px 2px rgba(100, 100, 100, 0.5)' }}
+                            onClick={() => onSelectFeed(null)}
                         >
                             FlowReader
                         </h1>
@@ -56,13 +51,23 @@ export function Sidebar({ onSelectFeed, selectedFeedId }: SidebarProps) {
 
                     <nav className="space-y-1">
                         <button
-                            onClick={() => onSelectFeed(null)}
-                            className={`w-full group flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-300 ${selectedFeedId === null
-                                ? 'bg-gold/20 text-yellow-700 shadow-sm border border-gold/20'
-                                : 'text-paper-muted hover:text-gold hover:bg-gold/5'
+                            onClick={() => markAllReadMutation.mutate()}
+                            disabled={markAllReadMutation.isPending}
+                            className={`w-full group flex items-center justify-center space-x-3 px-4 py-3 rounded-lg transition-all duration-300 border ${markAllReadMutation.isPending
+                                    ? 'bg-gold/5 border-gold/10 text-gold/50 cursor-wait'
+                                    : 'bg-transparent border-gold/20 text-paper-muted hover:text-gold hover:bg-gold/5 hover:border-gold/40'
                                 }`}
+                            title="Tout marquer comme lu"
                         >
-                            <span className="text-xs uppercase tracking-[0.2em] font-bold">Tout voir</span>
+                            <svg className={`w-4 h-4 ${markAllReadMutation.isPending ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                {markAllReadMutation.isPending
+                                    ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
+                                }
+                            </svg>
+                            <span className="text-xs uppercase tracking-[0.2em] font-bold">
+                                {markAllReadMutation.isPending ? 'Traitement...' : 'Tout marquer lu'}
+                            </span>
                         </button>
                     </nav>
                 </div>
