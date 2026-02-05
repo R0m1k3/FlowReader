@@ -65,7 +65,7 @@ export function Sidebar({ onSelectFeed, selectedFeedId }: SidebarProps) {
 
     return (
         <>
-            <aside className="w-72 bg-carbon/60 backdrop-blur-xl border-r border-earth/10 h-screen flex flex-col z-20">
+            <aside className="w-72 hidden md:flex bg-carbon-dark/40 backdrop-blur-xl border-r border-earth/10 h-screen flex-col z-20">
                 <div className="p-8 pb-4">
                     <div className="flex items-center justify-between mb-8">
 
