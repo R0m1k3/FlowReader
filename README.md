@@ -59,9 +59,18 @@ flowreader/
 
 ## Tech Stack
 
-- **Backend**: Go 1.22+ (Chi Router, pgx driver)
-- **Database**: PostgreSQL 16+
-- **Frontend**: React + Vite (coming in Epic 3)
+- **Backend**: Go 1.24+ (Chi, pgx, gofeed)
+- **Database**: PostgreSQL 16
+- **Frontend**: React 19 + Vite + Tailwind 4 ("Organic Warmth" Theme)
+- **Auth**: Session-based (HTTP-only cookies)
+- **Feeds**: RSS/Atom with Favicon extraction
+
+## Current Status (MVP)
+
+- [x] User Management (Register/Login)
+- [x] Feed Management (Add/Import/Refresh)
+- [x] Reader Experience (Grid/List View, infinite scroll)
+- [x] Theme: Organic Warmth (Carbon/Gold/Paper)
 
 ## Memory Target
 
