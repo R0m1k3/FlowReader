@@ -107,7 +107,7 @@ export function DashboardPage({ selectedFeedId }: DashboardPageProps) {
                             <button
                                 onClick={() => refreshMutation.mutate()}
                                 disabled={refreshMutation.isPending}
-                                className={`text-[10px] uppercase tracking-[0.2em] font-bold px-6 py-2.5 rounded-full border border-gold/30 text-gold hover:bg-gold hover:text-carbon transition-all duration-300 ${refreshMutation.isPending ? 'animate-pulse opacity-50' : 'hover:shadow-lg hover:shadow-gold/20'}`}
+                                className={`text-[10px] uppercase tracking-[0.2em] font-bold px-6 py-2.5 rounded-full border border-gold/30 text-gold hover:bg-gold hover:text-black transition-all duration-300 ${refreshMutation.isPending ? 'animate-pulse opacity-50' : 'hover:shadow-lg hover:shadow-gold/20'}`}
                             >
                                 {refreshMutation.isPending ? 'Mise à jour...' : 'Mettre à jour'}
                             </button>
