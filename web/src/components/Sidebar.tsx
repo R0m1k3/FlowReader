@@ -68,16 +68,17 @@ export function Sidebar({ onSelectFeed, selectedFeedId }: SidebarProps) {
             <aside className="w-72 bg-carbon-dark/50 backdrop-blur-xl border-r border-white/5 h-screen flex flex-col z-20">
                 <div className="p-8 pb-4">
                     <div className="flex items-center justify-between mb-8">
+
                         <h1
-                            className="text-gold text-3xl font-serif italic tracking-tight cursor-pointer hover:opacity-80 transition-opacity"
-                            style={{ textShadow: '1px 1px 2px rgba(100, 100, 100, 0.5)' }}
+                            className="text-nature text-3xl font-serif italic tracking-tight cursor-pointer hover:opacity-80 transition-opacity"
+                            style={{ textShadow: '1px 1px 2px rgba(100, 100, 100, 0.2)' }}
                             onClick={() => onSelectFeed(null)}
                         >
                             FlowReader
                         </h1>
                         <button
                             onClick={() => setIsAddModalOpen(true)}
-                            className="w-8 h-8 flex items-center justify-center rounded-full border border-gold/20 text-gold hover:bg-gold hover:text-carbon transition-all duration-300 shadow-sm"
+                            className="w-8 h-8 flex items-center justify-center rounded-full border border-nature/20 text-nature hover:bg-nature hover:text-white transition-all duration-300 shadow-sm"
                             title="Ajouter un flux"
                         >
                             <span className="text-xl leading-none">+</span>
@@ -89,8 +90,8 @@ export function Sidebar({ onSelectFeed, selectedFeedId }: SidebarProps) {
                             onClick={() => markAllReadMutation.mutate()}
                             disabled={markAllReadMutation.isPending}
                             className={`w-full group flex items-center justify-center space-x-3 px-4 py-3 rounded-lg transition-all duration-300 border ${markAllReadMutation.isPending
-                                ? 'bg-gold/5 border-gold/10 text-gold/50 cursor-wait'
-                                : 'bg-transparent border-gold/20 text-paper-muted hover:text-gold hover:bg-gold/5 hover:border-gold/40'
+                                ? 'bg-nature/5 border-nature/10 text-nature/50 cursor-wait'
+                                : 'bg-transparent border-nature/20 text-paper-muted hover:text-nature hover:bg-nature/5 hover:border-nature/40'
                                 }`}
                             title="Tout marquer comme lu"
                         >
@@ -115,12 +116,12 @@ export function Sidebar({ onSelectFeed, selectedFeedId }: SidebarProps) {
                                 <button
                                     onClick={() => onSelectFeed(null)}
                                     className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg transition-all duration-300 text-left ${selectedFeedId === null
-                                        ? 'bg-gold/10 text-gold-bright'
-                                        : 'text-paper-muted hover:text-gold hover:bg-gold/5'
+                                        ? 'bg-nature/10 text-nature border border-nature/20'
+                                        : 'text-paper-muted hover:text-nature-light hover:bg-nature/5'
                                         }`}
                                 >
                                     <span className="text-sm font-medium truncate flex items-center">
-                                        <span className={`w-1.5 h-1.5 rounded-full bg-gold/40 mr-3 transition-opacity ${selectedFeedId === null ? 'opacity-100' : 'opacity-0 group-hover/item:opacity-100'}`}></span>
+                                        <span className={`w-1.5 h-1.5 rounded-full bg-nature mr-3 transition-opacity ${selectedFeedId === null ? 'opacity-100' : 'opacity-0 group-hover/item:opacity-100'}`}></span>
                                         Tous les articles
                                     </span>
                                 </button>
@@ -129,12 +130,12 @@ export function Sidebar({ onSelectFeed, selectedFeedId }: SidebarProps) {
                                 <button
                                     onClick={() => onSelectFeed('favorites')}
                                     className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg transition-all duration-300 text-left ${selectedFeedId === 'favorites'
-                                        ? 'bg-gold/10 text-gold-bright'
-                                        : 'text-paper-muted hover:text-gold hover:bg-gold/5'
+                                        ? 'bg-nature/10 text-nature border border-nature/20'
+                                        : 'text-paper-muted hover:text-nature-light hover:bg-nature/5'
                                         }`}
                                 >
                                     <span className="text-sm font-medium truncate flex items-center">
-                                        <span className={`w-1.5 h-1.5 rounded-full bg-gold/40 mr-3 transition-opacity ${selectedFeedId === 'favorites' ? 'opacity-100' : 'opacity-0 group-hover/item:opacity-100'}`}></span>
+                                        <span className={`w-1.5 h-1.5 rounded-full bg-nature mr-3 transition-opacity ${selectedFeedId === 'favorites' ? 'opacity-100' : 'opacity-0 group-hover/item:opacity-100'}`}></span>
                                         Mes Favoris
                                     </span>
                                 </button>
@@ -144,24 +145,24 @@ export function Sidebar({ onSelectFeed, selectedFeedId }: SidebarProps) {
                                     <button
                                         onClick={() => onSelectFeed(feed.id)}
                                         className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg transition-all duration-300 text-left ${selectedFeedId === feed.id
-                                            ? 'bg-gold/10 text-gold-bright'
-                                            : 'text-paper-muted hover:text-gold hover:bg-gold/5'
+                                            ? 'bg-nature/10 text-nature border border-nature/20'
+                                            : 'text-paper-muted hover:text-nature-light hover:bg-nature/5'
                                             }`}
                                     >
                                         <span className="text-sm font-medium truncate flex items-center">
-                                            <span className={`w-1.5 h-1.5 rounded-full bg-gold/40 mr-3 transition-opacity ${selectedFeedId === feed.id ? 'opacity-100' : 'opacity-0 group-hover/item:opacity-100'}`}></span>
+                                            <span className={`w-1.5 h-1.5 rounded-full bg-nature mr-3 transition-opacity ${selectedFeedId === feed.id ? 'opacity-100' : 'opacity-0 group-hover/item:opacity-100'}`}></span>
                                             {feed.title}
                                         </span>
 
                                         <div className="flex items-center space-x-2">
                                             {(feed.unread_count ?? 0) > 0 && (
-                                                <span className="bg-gold/20 text-gold text-[10px] px-1.5 py-0.5 rounded-full min-w-[1.2rem] text-center font-bold">
+                                                <span className="bg-nature/20 text-nature text-[10px] px-1.5 py-0.5 rounded-full min-w-[1.2rem] text-center font-bold">
                                                     {feed.unread_count}
                                                 </span>
                                             )}
                                             <button
                                                 onClick={(e) => handleRename(e, feed.id, feed.title)}
-                                                className="opacity-0 group-hover/item:opacity-50 hover:!opacity-100 p-1 text-gold transition-all duration-300 transform scale-75 hover:scale-100"
+                                                className="opacity-0 group-hover/item:opacity-50 hover:!opacity-100 p-1 text-nature transition-all duration-300 transform scale-75 hover:scale-100"
                                                 title="Renommer le flux"
                                             >
                                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -186,8 +187,8 @@ export function Sidebar({ onSelectFeed, selectedFeedId }: SidebarProps) {
                 </div>
 
                 <div className="p-6 border-t border-white/5">
-                    <div className="p-4 rounded-xl bg-gold/5 border border-gold/10">
-                        <p className="text-[10px] text-gold/60 uppercase tracking-widest font-bold mb-1">Mode Zen</p>
+                    <div className="p-4 rounded-xl bg-nature/5 border border-nature/10">
+                        <p className="text-[10px] text-nature/60 uppercase tracking-widest font-bold mb-1">Mode Zen</p>
                         <p className="text-[9px] text-paper-muted leading-relaxed italic">"Le silence est le bruit des esprits."</p>
                     </div>
                 </div>

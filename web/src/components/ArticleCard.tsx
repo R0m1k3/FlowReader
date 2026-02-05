@@ -11,32 +11,32 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
     const timeToRead = Math.ceil((article.content?.length || 500) / 1000) + 1;
 
     return (
-        <article className="magazine-card group cursor-pointer flex flex-col h-full relative overflow-visible shadow-xl shadow-paper-muted/20 hover:shadow-2xl hover:shadow-gold/20 transition-all duration-500 rounded-xl border border-transparent hover:border-gold/10" onClick={() => onClick(article)}>
+        <article className="magazine-card group cursor-pointer flex flex-col h-full relative overflow-visible shadow-xl shadow-paper-muted/20 hover:shadow-2xl hover:shadow-nature/20 transition-all duration-500 rounded-xl border border-transparent hover:border-nature/10" onClick={() => onClick(article)}>
 
             {/* Unread Ribbon - Polished Wrapping Effect */}
             {!article.is_read && (
                 <div className="absolute -top-2 -right-2 z-50 w-[100px] h-[100px] overflow-hidden pointer-events-none">
                     {/* The Ribbon Itself */}
-                    <div className="absolute top-[22px] -right-[35px] w-[140px] bg-gold text-carbon text-[10px] font-extrabold uppercase tracking-widest py-1.5 text-center transform rotate-45 shadow-lg shadow-black/10 border-b border-white/10 flex items-center justify-center">
+                    <div className="absolute top-[22px] -right-[35px] w-[140px] bg-nature text-white text-[10px] font-extrabold uppercase tracking-widest py-1.5 text-center transform rotate-45 shadow-lg shadow-black/20 border-b border-white/10 flex items-center justify-center opacity-100 z-50">
                         Non Lu
                     </div>
 
                     {/* Darker Folds for "Wrapping" Effect (Simulated behind the card) */}
-                    <div className="absolute top-0 left-[22px] w-3 h-3 bg-yellow-900 rotate-45 transform -translate-x-1/2 -translate-y-1/2 z-[-1]"></div>
-                    <div className="absolute bottom-[22px] right-0 w-3 h-3 bg-yellow-900 rotate-45 transform translate-x-1/2 translate-y-1/2 z-[-1]"></div>
+                    <div className="absolute top-0 left-[22px] w-3 h-3 bg-green-900 rotate-45 transform -translate-x-1/2 -translate-y-1/2 z-[-1]"></div>
+                    <div className="absolute bottom-[22px] right-0 w-3 h-3 bg-green-900 rotate-45 transform translate-x-1/2 translate-y-1/2 z-[-1]"></div>
                 </div>
             )}
             {!article.is_read && (
                 /* External fold bits to cover the corner if needed for perfection */
                 <>
-                    <div className="absolute -top-[5px] right-[62px] w-2 h-2 bg-yellow-800 rotate-45 z-40 rounded-sm"></div>
-                    <div className="absolute top-[62px] -right-[5px] w-2 h-2 bg-yellow-800 rotate-45 z-40 rounded-sm"></div>
+                    <div className="absolute -top-[5px] right-[62px] w-2 h-2 bg-green-800 rotate-45 z-40 rounded-sm"></div>
+                    <div className="absolute top-[62px] -right-[5px] w-2 h-2 bg-green-800 rotate-45 z-40 rounded-sm"></div>
                 </>
             )}
 
-            {/* Image Placeholder with Gold Overlay */}
-            <div className="aspect-[16/10] overflow-hidden rounded-xl bg-carbon-light relative mb-6">
-                <div className="absolute inset-0 bg-gradient-to-t from-carbon-dark/80 via-transparent to-transparent opacity-60 z-10"></div>
+            {/* Image Placeholder with Gradient Overlay */}
+            <div className="aspect-[16/10] overflow-hidden rounded-t-xl rounded-b-none bg-carbon-light relative mb-6">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-90 z-10"></div>
 
                 {/* Visual placeholder or real image */}
                 <div
@@ -49,10 +49,10 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
 
                 {/* Meta on top of image */}
                 <div className="absolute bottom-4 left-4 right-4 z-20 flex justify-between items-end">
-                    <span className="text-[10px] text-gold-bright uppercase tracking-[.25em] font-black drop-shadow-md">
+                    <span className="text-[10px] text-white uppercase tracking-[.25em] font-black drop-shadow-md">
                         {article.feed_title || 'Journal'}
                     </span>
-                    <span className="text-[10px] text-paper-muted uppercase tracking-widest font-bold">
+                    <span className="text-[10px] text-white/80 uppercase tracking-widest font-bold">
                         {timeToRead} min
                     </span>
                 </div>
@@ -60,14 +60,14 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
 
             {/* Content */}
             <div className="space-y-4 px-1">
-                <h2 className={`text-xl font-serif italic transition-colors duration-300 group-hover:text-gold ${article.is_read ? 'text-paper-muted font-normal' : 'text-paper-white font-bold'}`}
+                <h2 className={`text-xl font-serif italic transition-colors duration-300 group-hover:text-nature-light ${article.is_read ? 'text-paper-muted font-normal' : 'text-paper-white font-bold'}`}
                     style={article.is_read ? {} : { textShadow: '0 1px 1px rgba(0,0,0,0.1)' }}
                 >
                     {article.title}
                 </h2>
 
                 {article.summary && (
-                    <p className="text-paper-muted text-sm leading-relaxed line-clamp-3 font-reading opacity-80 decoration-gold/0 group-hover:opacity-100 transition-opacity">
+                    <p className="text-paper-muted text-sm leading-relaxed line-clamp-3 font-reading opacity-80 decoration-nature/0 group-hover:opacity-100 transition-opacity">
                         {article.summary.replace(/<[^>]*>?/gm, '').substring(0, 160)}...
                     </p>
                 )}
@@ -79,7 +79,7 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
                                 e.stopPropagation();
                                 onToggleRead(article.id, !article.is_read);
                             }}
-                            className={`p-1.5 rounded-full transition-all duration-300 border ${article.is_read ? 'text-gold/40 border-gold/10' : 'text-gold bg-gold/5 border-paper-white/40 hover:bg-gold/20 hover:border-paper-white'}`}
+                            className={`p-1.5 rounded-full transition-all duration-300 border ${article.is_read ? 'text-nature/40 border-nature/10' : 'text-nature bg-nature/5 border-paper-white/40 hover:bg-nature/20 hover:border-nature'}`}
                             title={article.is_read ? "Marquer comme non lu" : "Marquer comme lu"}
                         >
                             <svg className="w-4 h-4" fill={article.is_read ? "none" : "currentColor"} viewBox="0 0 24 24" stroke="currentColor">
@@ -91,7 +91,7 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
                                 e.stopPropagation();
                                 onToggleFavorite(article.id);
                             }}
-                            className={`p-1.5 rounded-full transition-all duration-300 ${article.is_favorite ? 'text-gold gold-glow' : 'text-paper-muted hover:text-gold hover:bg-gold/10'}`}
+                            className={`p-1.5 rounded-full transition-all duration-300 ${article.is_favorite ? 'text-nature nature-glow' : 'text-paper-muted hover:text-nature hover:bg-nature/10'}`}
                             title="Ajouter aux favoris"
                         >
                             <svg className="w-4 h-4" fill={article.is_favorite ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
