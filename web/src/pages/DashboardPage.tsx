@@ -40,7 +40,33 @@ export function DashboardPage({ selectedFeedId }: DashboardPageProps) {
     const toggleReadMutation = useMutation({
         mutationFn: ({ id, is_read }: { id: string; is_read: boolean }) =>
             is_read ? articlesApi.markRead(id) : articlesApi.markUnread(id),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['articles'] }),
+        onMutate: async ({ id, is_read }) => {
+            // Cancel outgoing refetches
+            await queryClient.cancelQueries({ queryKey: ['articles'] });
+
+            // Snapshot previous value
+            const previousArticles = queryClient.getQueryData(['articles', selectedFeedId]);
+
+            // Optimistically update
+            queryClient.setQueryData(['articles', selectedFeedId], (old: Article[] | undefined) => {
+                if (!old) return old;
+                return old.map((article) =>
+                    article.id === id ? { ...article, is_read: is_read } : article
+                );
+            });
+
+            return { previousArticles };
+        },
+        onError: (_err, _newTodo, context) => {
+            // Rollback on error
+            if (context?.previousArticles) {
+                queryClient.setQueryData(['articles', selectedFeedId], context.previousArticles);
+            }
+        },
+        onSuccess: () => {
+            // Refetch to be safe (but optimistic update makes it instant)
+            queryClient.invalidateQueries({ queryKey: ['articles'] });
+        },
     });
 
     const toggleFavoriteMutation = useMutation({

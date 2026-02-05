@@ -49,7 +49,11 @@ func (s *FetchService) FetchFeed(ctx context.Context, feedID uuid.UUID) error {
 	}
 
 	// Update feed metadata
-	feed.Title = parsedFeed.Title
+	// Only update title if it's empty or looks like a URL (initial state)
+	if feed.Title == "" || feed.Title == feed.URL {
+		feed.Title = parsedFeed.Title
+	}
+	
 	feed.Description = parsedFeed.Description
 	feed.SiteURL = parsedFeed.SiteURL
 	feed.ImageURL = parsedFeed.ImageURL
