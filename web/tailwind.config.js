@@ -8,7 +8,7 @@ export default {
         extend: {
             colors: {
                 carbon: {
-                    DEFAULT: '#FAFAF9', // Stone-50 (Warm Paper Background)
+                    DEFAULT: '#F9F7F1', // Warm Cream (Newspaper)
                     light: '#FFFFFF',   // Pure White (Cards)
                     dark: '#E7E5E4',    // Stone-200 (Borders/Inputs)
                 },

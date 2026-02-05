@@ -4,16 +4,33 @@ import { articlesApi } from '../api/articles';
 import { feedsApi } from '../api/feeds';
 import { ArticleCard } from '../components/ArticleCard';
 import { ReaderView } from '../components/ReaderView';
+import { MobileReaderView } from '../components/MobileReaderView';
 import { useWebsocket } from '../hooks/useWebsocket';
+import { useEffect } from 'react';
 import type { Article } from '../api/articles';
 
 interface DashboardPageProps {
     selectedFeedId: string | null;
 }
 
+// Helper Hook for Responsive Split
+function useIsMobile() {
+    const [isMobile, setIsMobile] = useState(window.matchMedia('(max-width: 768px)').matches);
+
+    useEffect(() => {
+        const media = window.matchMedia('(max-width: 768px)');
+        const listener = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+        media.addEventListener('change', listener); // Modern browsers support this
+        return () => media.removeEventListener('change', listener);
+    }, []);
+
+    return isMobile;
+}
+
 export function DashboardPage({ selectedFeedId }: DashboardPageProps) {
     const queryClient = useQueryClient();
     const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+    const isMobile = useIsMobile();
 
     // Real-time sync
     useWebsocket();
@@ -143,11 +160,41 @@ export function DashboardPage({ selectedFeedId }: DashboardPageProps) {
             </div>
 
             {selectedArticle && (
-                <ReaderView
-                    article={selectedArticle}
-                    onClose={() => setSelectedArticle(null)}
-                    onToggleFavorite={(id) => toggleFavoriteMutation.mutate(id)}
-                />
+                isMobile ? (
+                    <MobileReaderView
+                        article={selectedArticle}
+                        onClose={() => setSelectedArticle(null)}
+                        onToggleFavorite={(id) => toggleFavoriteMutation.mutate(id)}
+                        onNext={() => {
+                            if (!articles) return;
+                            const idx = articles.findIndex(a => a.id === selectedArticle.id);
+                            if (idx < articles.length - 1) {
+                                const nextArticle = articles[idx + 1];
+                                setSelectedArticle(nextArticle);
+                                if (!nextArticle.is_read) {
+                                    toggleReadMutation.mutate({ id: nextArticle.id, is_read: true });
+                                }
+                            } else {
+                                // End of list feedback?
+                                setSelectedArticle(null); // Close for now or loop? Closing feels right for "Done".
+                            }
+                        }}
+                        onPrev={() => {
+                            if (!articles) return;
+                            const idx = articles.findIndex(a => a.id === selectedArticle.id);
+                            if (idx > 0) {
+                                const prevArticle = articles[idx - 1];
+                                setSelectedArticle(prevArticle);
+                            }
+                        }}
+                    />
+                ) : (
+                    <ReaderView
+                        article={selectedArticle}
+                        onClose={() => setSelectedArticle(null)}
+                        onToggleFavorite={(id) => toggleFavoriteMutation.mutate(id)}
+                    />
+                )
             )}
         </main>
     );

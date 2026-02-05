@@ -2,7 +2,7 @@
 @import "tailwindcss";
 
 @theme {
-  --color-carbon: #F0F0EB;
+  --color-carbon: #F9F7F1;
   --color-carbon-light: #FFFFFF;
   --color-carbon-dark: #E7E5E4;
   --color-nature: #166534;
