@@ -36,7 +36,7 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
 
             {/* Image Placeholder with Gradient Overlay */}
             <div className="aspect-[16/10] overflow-hidden rounded-t-xl rounded-b-none bg-carbon-light relative mb-6">
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-90 z-10"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-white via-white/40 to-transparent opacity-100 z-10"></div>
 
                 {/* Visual placeholder or real image */}
                 <div
@@ -49,10 +49,10 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
 
                 {/* Meta on top of image */}
                 <div className="absolute bottom-4 left-4 right-4 z-20 flex justify-between items-end">
-                    <span className="text-[10px] text-white uppercase tracking-[.25em] font-black drop-shadow-md">
+                    <span className="text-[10px] text-nature font-black uppercase tracking-[.25em] drop-shadow-sm">
                         {article.feed_title || 'Journal'}
                     </span>
-                    <span className="text-[10px] text-white/80 uppercase tracking-widest font-bold">
+                    <span className="text-[10px] text-nature/80 font-bold uppercase tracking-widest">
                         {timeToRead} min
                     </span>
                 </div>
