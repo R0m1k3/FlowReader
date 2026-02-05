@@ -36,8 +36,7 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
 
             {/* Image Placeholder with Gradient Overlay */}
             <div className="aspect-[16/10] overflow-hidden rounded-t-xl rounded-b-none bg-carbon-light relative mb-6">
-                {/* Gradient lowered to 30% height and reduced opacity to avoid covering too much image */}
-                <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-white via-white/60 to-transparent opacity-90 z-10"></div>
+
 
                 {/* Visual placeholder or real image */}
                 <div
