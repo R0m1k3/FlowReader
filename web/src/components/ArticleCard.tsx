@@ -18,7 +18,7 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
                 <div className="absolute -top-2 -right-2 z-50 w-[100px] h-[100px] overflow-hidden pointer-events-none">
                     {/* The Ribbon Itself */}
                     <div className="absolute top-[22px] -right-[35px] w-[140px] bg-nature text-white text-[10px] font-extrabold uppercase tracking-widest py-1.5 text-center transform rotate-45 shadow-lg shadow-black/20 border-b border-white/10 flex items-center justify-center opacity-100 z-50">
-                        Non Lu
+                        Nouveau
                     </div>
 
                     {/* Darker Folds for "Wrapping" Effect (Simulated behind the card) */}

@@ -30,11 +30,11 @@ export function AddFeedModal({ isOpen, onClose }: AddFeedModalProps) {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-carbon-dark/80 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose}>
             <div
-                className="w-full max-w-md glass-panel p-8 rounded-2xl shadow-2xl border border-gold/10 animate-in zoom-in duration-300"
+                className="w-full max-w-md paper-panel p-8 rounded-2xl shadow-2xl border border-nature/10 animate-in zoom-in duration-300"
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-serif text-gold italic">Nouveau Flux</h2>
+                    <h2 className="text-2xl font-serif text-nature italic">Nouveau Flux</h2>
                     <button onClick={onClose} className="text-paper-muted hover:text-white transition-colors">
                         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M6 18L18 6M6 6l12 12" />

@@ -31,7 +31,7 @@ export function ReaderView({ article, onClose, onToggleFavorite }: ReaderViewPro
                 {/* Close button for desktop */}
                 <button
                     onClick={onClose}
-                    className="absolute top-8 -right-16 hidden md:flex w-12 h-12 items-center justify-center rounded-full border border-gold/20 text-gold hover:bg-gold hover:text-carbon hover:scale-110 transition-all duration-300 z-50"
+                    className="absolute top-8 -right-16 hidden md:flex w-12 h-12 items-center justify-center rounded-full border border-nature/20 text-nature hover:bg-nature hover:text-white hover:scale-110 transition-all duration-300 z-50"
                     title="Fermer"
                 >
                     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -53,19 +53,19 @@ export function ReaderView({ article, onClose, onToggleFavorite }: ReaderViewPro
 
                 <div className={`p-8 md:p-20 ${!article.image_url ? 'pt-16' : 'pt-8'}`}>
                     <header className="mb-10">
-                        <div className="flex items-center space-x-3 text-gold text-[10px] uppercase tracking-[0.4em] font-black mb-8">
-                            <span className="bg-gold/10 px-2 py-1 rounded">{article.feed_title}</span>
+                        <div className="flex items-center space-x-3 text-nature text-[10px] uppercase tracking-[0.4em] font-black mb-8">
+                            <span className="bg-nature/10 px-2 py-1 rounded">{article.feed_title}</span>
                             <span className="opacity-30">•</span>
                             <span>{article.published_at ? new Date(article.published_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Aujourd\'hui'}</span>
                         </div>
 
-                        <h1 className="text-4xl md:text-6xl font-serif text-paper-white leading-[1.15] italic-gold tracking-tight">
+                        <h1 className="text-4xl md:text-6xl font-serif text-paper-white leading-[1.15] italic-nature tracking-tight">
                             {article.title}
                         </h1>
                     </header>
 
                     <div
-                        className="magazine-content text-paper-white/90 text-xl font-reading leading-relaxed space-y-8 selection:bg-gold/20 break-words overflow-x-hidden mb-12"
+                        className="magazine-content text-paper-white/90 text-xl font-reading leading-relaxed space-y-8 selection:bg-nature/20 break-words overflow-x-hidden mb-12"
                         dangerouslySetInnerHTML={{ __html: displayContent }}
                     />
 
@@ -74,8 +74,8 @@ export function ReaderView({ article, onClose, onToggleFavorite }: ReaderViewPro
                             <button
                                 onClick={() => onToggleFavorite(article.id)}
                                 className={`flex items-center space-x-3 px-6 py-2.5 rounded-full border transition-all duration-500 ${article.is_favorite
-                                    ? 'bg-gold text-carbon border-paper-white/20 shadow-lg'
-                                    : 'border-paper-white/20 text-gold hover:bg-gold/5'
+                                    ? 'bg-nature text-white border-paper-white/20 shadow-lg'
+                                    : 'border-paper-white/20 text-nature hover:bg-nature/5'
                                     }`}
                             >
                                 <svg className="w-4 h-4" fill={article.is_favorite ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
@@ -91,7 +91,7 @@ export function ReaderView({ article, onClose, onToggleFavorite }: ReaderViewPro
                             href={article.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="group flex items-center space-x-2 text-[10px] uppercase tracking-[0.2em] font-black text-paper-muted hover:text-gold transition-colors"
+                            className="group flex items-center space-x-2 text-[10px] uppercase tracking-[0.2em] font-black text-paper-muted hover:text-nature transition-colors"
                         >
                             <span>Source d'origine</span>
                             <svg className="w-3 h-3 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -101,7 +101,7 @@ export function ReaderView({ article, onClose, onToggleFavorite }: ReaderViewPro
                     </div>
 
                     <footer className="text-center pb-24">
-                        <div className="text-gold text-4xl font-serif mb-6 italic select-none">F.</div>
+                        <div className="text-nature text-4xl font-serif mb-6 italic select-none">F.</div>
                         <p className="text-paper-muted/40 text-[10px] uppercase tracking-[0.4em] font-black">
                             FlowReader Lux Édition • 2026
                         </p>
@@ -112,7 +112,7 @@ export function ReaderView({ article, onClose, onToggleFavorite }: ReaderViewPro
             {/* Mobile close button overlay */}
             <button
                 onClick={onClose}
-                className="fixed bottom-8 right-8 md:hidden w-14 h-14 bg-gold text-carbon rounded-full shadow-2xl flex items-center justify-center scale-90 active:scale-75 transition-transform gold-glow z-50"
+                className="fixed bottom-8 right-8 md:hidden w-14 h-14 bg-nature text-white rounded-full shadow-2xl flex items-center justify-center scale-90 active:scale-75 transition-transform nature-glow z-50"
             >
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
