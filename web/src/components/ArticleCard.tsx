@@ -49,7 +49,7 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
 
                 {/* Meta on top of image */}
                 <div className="absolute bottom-4 left-4 right-4 z-20 flex justify-between items-end">
-                    <span className="text-[10px] text-nature font-black uppercase tracking-[.25em] drop-shadow-sm">
+                    <span className="bg-nature/10 px-2 py-1 rounded text-[10px] text-nature font-black uppercase tracking-[.25em] drop-shadow-sm">
                         {article.feed_title || 'Journal'}
                     </span>
                     <span className="text-[10px] text-nature/80 font-bold uppercase tracking-widest">
