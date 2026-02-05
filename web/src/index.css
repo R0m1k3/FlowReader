@@ -2,13 +2,14 @@
 @import "tailwindcss";
 
 @theme {
-  --color-carbon: #F8F9FA;
+  --color-carbon: #FAFAF9;
   --color-carbon-light: #FFFFFF;
-  --color-carbon-dark: #E9ECEF;
-  --color-gold: #c5a059;
-  --color-gold-bright: #e2c28d;
-  --color-paper-white: #1A1A1A;
-  --color-paper-muted: #6B7280;
+  --color-carbon-dark: #E7E5E4;
+  --color-nature: #166534;
+  --color-nature-light: #15803d;
+  --color-earth: #A0522D;
+  --color-paper-white: #1C1917;
+  --color-paper-muted: #57534E;
 
   --font-serif: "Playfair Display", serif;
   --font-sans: "Inter", system-ui, sans-serif;
@@ -17,24 +18,22 @@
   --line-height-magazine: 1.8;
 }
 
-@utility gold-glow {
-  box-shadow: 0 0 20px rgba(197, 160, 89, 0.15);
+@utility nature-glow {
+  box-shadow: 0 4px 20px rgba(22, 101, 52, 0.15);
 }
 
-@utility glass-panel {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+@utility paper-panel {
+  background: #FFFFFF;
+  border: 1px solid #E7E5E4;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
 }
 
 @layer base {
   body {
-    @apply bg-carbon text-paper-white font-sans antialiased selection:bg-gold/30;
+    @apply bg-carbon text-paper-white font-sans antialiased selection:bg-nature/20;
     margin: 0;
     min-height: 100vh;
-    /* Optional: Subtle texture for paper effect, or clean flat color */
-    background-color: var(--color-carbon);
+    border-top: 4px solid var(--color-nature); /* Editorial Touch */
   }
 
   h1,
@@ -43,11 +42,11 @@
   h4,
   h5,
   h6 {
-    @apply font-serif tracking-tight leading-tight;
+    @apply font-serif tracking-tight leading-tight text-paper-white;
   }
 
   a {
-    @apply transition-all duration-300 decoration-gold/30 underline-offset-4 hover:decoration-gold;
+    @apply transition-all duration-300 decoration-nature/30 underline-offset-4 hover:decoration-nature;
   }
 
   ::-webkit-scrollbar {
@@ -59,12 +58,12 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: rgba(197, 160, 89, 0.2);
+    background: rgba(87, 83, 78, 0.2);
     border-radius: 10px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(197, 160, 89, 0.4);
+    background: rgba(87, 83, 78, 0.4);
   }
 }
 
@@ -89,23 +88,23 @@
   }
 
   .magazine-card {
-    @apply relative transition-all duration-500 ease-out;
+    @apply relative transition-all duration-500 ease-out hover:-translate-y-1;
   }
 
   .btn-primary {
-    @apply bg-gold text-carbon font-bold px-6 py-2.5 rounded-full hover:bg-gold-bright hover:-translate-y-0.5 transition-all shadow-lg active:scale-95 text-xs uppercase tracking-widest;
+    @apply bg-nature text-white font-medium px-6 py-2.5 rounded-lg hover:bg-nature-light hover:shadow-lg transition-all active:scale-95 text-xs uppercase tracking-widest border border-transparent;
   }
 
   .btn-ghost {
-    @apply text-paper-muted hover:text-gold hover:bg-gold/5 px-4 py-2 rounded-lg transition-all text-sm;
+    @apply text-paper-muted hover:text-nature hover:bg-nature/5 px-4 py-2 rounded-lg transition-all text-sm font-medium;
   }
 
   .input-field {
-    @apply bg-carbon-dark border border-white/10 text-paper-white px-4 py-3 rounded-lg focus:border-gold/50 focus:ring-1 focus:ring-gold/50 outline-none transition-all placeholder:text-paper-muted/30;
+    @apply bg-white border border-carbon-dark text-paper-white px-4 py-3 rounded-lg focus:border-nature/50 focus:ring-1 focus:ring-nature/50 outline-none transition-all placeholder:text-paper-muted/50 shadow-sm;
   }
 
   .magazine-content {
-    @apply font-reading leading-relaxed text-paper-white/80;
+    @apply font-reading leading-relaxed text-paper-white/90;
   }
 
   .magazine-content p {
@@ -113,16 +112,16 @@
   }
 
   .magazine-content a {
-    @apply text-gold border-b border-gold/20 hover:border-gold transition-all no-underline;
+    @apply text-nature border-b border-nature/20 hover:border-nature transition-all no-underline font-medium;
   }
 
   .magazine-content h2,
   .magazine-content h3 {
-    @apply text-white font-serif italic mb-6 mt-12;
+    @apply text-paper-white font-serif italic mb-6 mt-12;
   }
 
   .magazine-content img {
-    @apply rounded-2xl my-12 border border-white/5 shadow-2xl mx-auto;
+    @apply rounded-xl my-12 shadow-lg mx-auto;
   }
 
   .magazine-content ul,
@@ -131,6 +130,6 @@
   }
 
   .magazine-content li {
-    @apply pl-2;
+    @apply pl-2 marker:text-nature;
   }
 }
