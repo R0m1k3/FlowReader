@@ -96,7 +96,12 @@ export function DashboardPage({ selectedFeedId }: DashboardPageProps) {
                             <div key={article.id} className={index % 6 === 0 ? 'md:col-span-2' : ''}>
                                 <ArticleCard
                                     article={article}
-                                    onClick={setSelectedArticle}
+                                    onClick={(article) => {
+                                        setSelectedArticle(article);
+                                        if (!article.is_read) {
+                                            toggleReadMutation.mutate({ id: article.id, is_read: true });
+                                        }
+                                    }}
                                     onToggleRead={(id, is_read) => toggleReadMutation.mutate({ id, is_read })}
                                     onToggleFavorite={(id) => toggleFavoriteMutation.mutate(id)}
                                 />

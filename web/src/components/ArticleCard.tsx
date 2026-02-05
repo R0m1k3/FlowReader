@@ -36,7 +36,8 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
 
             {/* Image Placeholder with Gradient Overlay */}
             <div className="aspect-[16/10] overflow-hidden rounded-t-xl rounded-b-none bg-carbon-light relative mb-6">
-                <div className="absolute inset-0 bg-gradient-to-t from-white via-white/40 to-transparent opacity-100 z-10"></div>
+                {/* Gradient lowered to 50% height to avoid covering too much image */}
+                <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-white via-white/80 to-transparent opacity-100 z-10"></div>
 
                 {/* Visual placeholder or real image */}
                 <div
@@ -59,7 +60,7 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
             </div>
 
             {/* Content */}
-            <div className="space-y-4 px-1">
+            <div className="flex-1 flex flex-col px-1 gap-4">
                 <h2 className={`text-xl font-serif italic transition-colors duration-300 group-hover:text-nature-light ${article.is_read ? 'text-paper-muted font-normal' : 'text-paper-white font-bold'}`}
                     style={article.is_read ? {} : { textShadow: '0 1px 1px rgba(0,0,0,0.1)' }}
                 >
@@ -72,7 +73,7 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
                     </p>
                 )}
 
-                <div className="flex items-center justify-between pt-2 border-t border-white/5 mt-4">
+                <div className="mt-auto flex items-center justify-between pt-4 pb-2 border-t border-white/5">
                     <div className="flex space-x-2">
                         <button
                             onClick={(e) => {
