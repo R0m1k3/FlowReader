@@ -121,7 +121,7 @@
 
   .magazine-content h2,
   .magazine-content h3 {
-    @apply text-paper-white font-serif italic mb-6 mt-12;
+    @apply text-paper-white font-serif mb-6 mt-12;
   }
 
   .magazine-content img {

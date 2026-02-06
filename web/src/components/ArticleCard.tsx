@@ -60,8 +60,8 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
 
             {/* Content */}
             <div className="flex-1 flex flex-col px-1 gap-4">
-                <h2 className={`text-xl font-serif italic transition-colors duration-300 group-hover:text-nature-light ${article.is_read ? 'text-paper-muted font-normal' : 'text-paper-white font-bold'}`}
-                    style={article.is_read ? {} : { textShadow: '0 1px 1px rgba(0,0,0,0.1)' }}
+                <h2 className={`text-xl font-serif transition-colors duration-300 group-hover:text-nature-light ${article.is_read ? 'text-paper-muted font-normal' : 'text-paper-white font-black'}`}
+                    style={article.is_read ? {} : { textShadow: '0 1px 1px rgba(0,0,0,0.05)' }}
                 >
                     {article.title}
                 </h2>
