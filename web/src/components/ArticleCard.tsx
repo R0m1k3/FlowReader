@@ -152,7 +152,7 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
                     {article.ai_summary ? (
                         <div className="flex items-center space-x-2 text-nature/80">
                             <span className="text-sm px-2 py-0.5 bg-nature/10 rounded-full font-medium flex items-center">
-                                <span className="mr-1">✨</span> Smart Digest prêt
+                                <span className="mr-1">✨</span> Résumé
                             </span>
                         </div>
                     ) : article.summary && (
