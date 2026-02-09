@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { feedsApi } from '../api/feeds';
 import { articlesApi } from '../api/articles';
 import { AddFeedModal } from './AddFeedModal';
+import { ThemeToggle } from './ThemeToggle';
 
 interface SidebarProps {
     onSelectFeed: (feedId: string | null) => void;
@@ -65,10 +66,9 @@ export function Sidebar({ onSelectFeed, selectedFeedId }: SidebarProps) {
 
     return (
         <>
-            <aside className="w-72 hidden md:flex bg-carbon-dark/40 backdrop-blur-xl border-r border-earth/10 h-screen flex-col z-20">
+            <aside className="w-72 hidden md:flex bg-carbon-dark/40 backdrop-blur-xl border-r border-earth/10 h-screen flex-col z-20 transition-colors duration-500">
                 <div className="p-8 pb-4">
                     <div className="flex items-center justify-between mb-8">
-
                         <h1
                             className="text-nature text-3xl font-serif italic tracking-tight cursor-pointer hover:opacity-80 transition-opacity"
                             style={{ textShadow: '1px 1px 2px rgba(100, 100, 100, 0.2)' }}
@@ -76,13 +76,16 @@ export function Sidebar({ onSelectFeed, selectedFeedId }: SidebarProps) {
                         >
                             FlowReader
                         </h1>
-                        <button
-                            onClick={() => setIsAddModalOpen(true)}
-                            className="w-8 h-8 flex items-center justify-center rounded-full border border-nature/20 text-nature hover:bg-nature hover:text-white transition-all duration-300 shadow-sm"
-                            title="Ajouter un flux"
-                        >
-                            <span className="text-xl leading-none">+</span>
-                        </button>
+                        <div className="flex items-center space-x-2">
+                            <ThemeToggle />
+                            <button
+                                onClick={() => setIsAddModalOpen(true)}
+                                className="w-8 h-8 flex items-center justify-center rounded-full border border-nature/20 text-nature hover:bg-nature hover:text-white transition-all duration-300 shadow-sm"
+                                title="Ajouter un flux"
+                            >
+                                <span className="text-xl leading-none">+</span>
+                            </button>
+                        </div>
                     </div>
 
                     <nav className="space-y-1">

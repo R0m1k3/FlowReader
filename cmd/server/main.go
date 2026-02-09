@@ -122,6 +122,7 @@ func main() {
 		// Article routes
 		r.Route("/articles", func(r chi.Router) {
 			r.Get("/", articleHandler.List)
+			r.Get("/search", articleHandler.Search)
 			r.Post("/read-all", articleHandler.MarkAllReadGlobal)
 			r.Get("/favorites", articleHandler.GetFavorites)
 			r.Get("/{id}", articleHandler.Get)

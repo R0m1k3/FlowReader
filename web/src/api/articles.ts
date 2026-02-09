@@ -106,4 +106,16 @@ export const articlesApi = {
         });
         return handleResponse(response);
     },
+
+    async search(query: string, limit: number = 50, offset: number = 0): Promise<Article[]> {
+        const params = new URLSearchParams();
+        params.append('q', query);
+        params.append('limit', limit.toString());
+        params.append('offset', offset.toString());
+
+        const response = await fetch(`${API_BASE}/articles/search?${params.toString()}`, {
+            credentials: 'include',
+        });
+        return handleResponse<Article[]>(response);
+    },
 };

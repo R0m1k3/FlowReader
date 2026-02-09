@@ -31,8 +31,18 @@ function useIsMobile() {
 export function DashboardPage({ selectedFeedId }: DashboardPageProps) {
     const queryClient = useQueryClient();
     const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedQuery, setDebouncedQuery] = useState('');
     const isMobile = useIsMobile();
     const loadMoreRef = useRef<HTMLDivElement>(null);
+
+    // Debounce search query
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedQuery(searchQuery);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
 
     // Real-time sync
     useWebsocket();
@@ -44,12 +54,17 @@ export function DashboardPage({ selectedFeedId }: DashboardPageProps) {
         hasNextPage,
         isFetchingNextPage
     } = useInfiniteQuery({
-        queryKey: ['articles', selectedFeedId],
+        queryKey: ['articles', selectedFeedId, debouncedQuery],
         queryFn: ({ pageParam = 0 }) => {
             const options = {
                 limit: ITEMS_PER_PAGE,
                 offset: pageParam,
             };
+
+            if (debouncedQuery) {
+                return articlesApi.search(debouncedQuery, ITEMS_PER_PAGE, pageParam);
+            }
+
             if (selectedFeedId === 'favorites') {
                 return articlesApi.list({ ...options, favorite: true });
             }
@@ -93,10 +108,11 @@ export function DashboardPage({ selectedFeedId }: DashboardPageProps) {
         mutationFn: ({ id, is_read }: { id: string; is_read: boolean }) =>
             is_read ? articlesApi.markRead(id) : articlesApi.markUnread(id),
         onMutate: async ({ id, is_read }) => {
-            await queryClient.cancelQueries({ queryKey: ['articles'] });
-            const previousData = queryClient.getQueryData(['articles', selectedFeedId]);
+            const queryKey = ['articles', selectedFeedId, debouncedQuery];
+            await queryClient.cancelQueries({ queryKey });
+            const previousData = queryClient.getQueryData(queryKey);
 
-            queryClient.setQueryData(['articles', selectedFeedId], (old: any) => {
+            queryClient.setQueryData(queryKey, (old: any) => {
                 if (!old) return old;
                 return {
                     ...old,
@@ -111,8 +127,9 @@ export function DashboardPage({ selectedFeedId }: DashboardPageProps) {
             return { previousData };
         },
         onError: (_err, _newTodo, context) => {
+            const queryKey = ['articles', selectedFeedId, debouncedQuery];
             if (context?.previousData) {
-                queryClient.setQueryData(['articles', selectedFeedId], context.previousData);
+                queryClient.setQueryData(queryKey, context.previousData);
             }
         },
         onSuccess: () => {
@@ -169,16 +186,16 @@ export function DashboardPage({ selectedFeedId }: DashboardPageProps) {
 
             <div className="max-w-[1400px] mx-auto px-12 py-16">
                 {/* Header */}
-                <header className="mb-20 space-y-4 border-b border-white/5 pb-10">
-                    <div className="flex items-center justify-between">
+                <header className="mb-20 space-y-12 border-b border-white/5 pb-10">
+                    <div className="flex items-start justify-between">
                         <div className="space-y-1">
                             <p className="text-nature text-[10px] uppercase tracking-[0.5em] font-black">Édition du jour</p>
                             <h1 className="text-6xl font-serif italic text-paper-white tracking-tighter">
-                                {selectedFeedId === 'favorites' ? 'Mes Favoris' : selectedFeedId ? 'Archives du Flux' : 'La Une'}
+                                {debouncedQuery ? `Résultats : "${debouncedQuery}"` : selectedFeedId === 'favorites' ? 'Mes Favoris' : selectedFeedId ? 'Archives du Flux' : 'La Une'}
                             </h1>
                         </div>
-                        <div className="flex flex-col items-center gap-4 text-center">
-                            <div className="flex flex-col items-center">
+                        <div className="flex flex-col items-end gap-6">
+                            <div className="flex flex-col items-end text-right">
                                 <p className="text-nature text-sm font-serif italic font-bold tracking-wide">
                                     {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                                 </p>
@@ -186,13 +203,39 @@ export function DashboardPage({ selectedFeedId }: DashboardPageProps) {
                                     Volume IX • No. 42
                                 </p>
                             </div>
-                            <button
-                                onClick={() => refreshMutation.mutate()}
-                                disabled={refreshMutation.isPending}
-                                className={`text-[10px] uppercase tracking-[0.2em] font-bold px-6 py-2.5 rounded-full border border-nature/30 text-nature hover:bg-nature hover:text-white hover:border-nature transition-all duration-300 ${refreshMutation.isPending ? 'animate-pulse opacity-50' : 'hover:shadow-lg hover:shadow-nature/20'}`}
-                            >
-                                {refreshMutation.isPending ? 'Mise à jour...' : 'Mettre à jour'}
-                            </button>
+                            <div className="flex items-center gap-3">
+                                <div className="relative group">
+                                    <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-paper-muted/40 group-focus-within:text-nature transition-colors">
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                        </svg>
+                                    </div>
+                                    <input
+                                        type="text"
+                                        placeholder="RECHERCHER DANS L'ÉDITION..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-full text-[10px] text-paper-white placeholder-paper-muted/40 font-black tracking-widest focus:outline-none focus:ring-1 focus:ring-nature focus:border-nature transition-all w-48 focus:w-72"
+                                    />
+                                    {searchQuery && (
+                                        <button
+                                            onClick={() => setSearchQuery('')}
+                                            className="absolute inset-y-0 right-3 flex items-center text-paper-muted hover:text-paper-white transition-colors"
+                                        >
+                                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    )}
+                                </div>
+                                <button
+                                    onClick={() => refreshMutation.mutate()}
+                                    disabled={refreshMutation.isPending}
+                                    className={`text-[10px] uppercase tracking-[0.2em] font-bold px-6 py-2 rounded-full border border-nature/30 text-nature hover:bg-nature hover:text-white hover:border-nature transition-all duration-300 ${refreshMutation.isPending ? 'animate-pulse opacity-50' : 'hover:shadow-lg hover:shadow-nature/20'}`}
+                                >
+                                    {refreshMutation.isPending ? 'Mise à jour' : 'Actualiser'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </header>
@@ -223,7 +266,7 @@ export function DashboardPage({ selectedFeedId }: DashboardPageProps) {
                             {isFetchingNextPage ? (
                                 <>
                                     <div className="w-8 h-8 border-t-2 border-nature rounded-full animate-spin"></div>
-                                    <p className="text-nature text-[8px] uppercase tracking-[0.4em] font-black">Chargement d'articles supplémentaires...</p>
+                                    <p className="text-nature text-[8px] uppercase tracking-[0.4em] font-black">Chargement supplémentaire...</p>
                                 </>
                             ) : hasNextPage ? (
                                 <p className="text-paper-muted/20 text-[8px] uppercase tracking-[0.4em] font-black italic">Défilez pour découvrir la suite</p>
@@ -238,8 +281,12 @@ export function DashboardPage({ selectedFeedId }: DashboardPageProps) {
                     </>
                 ) : (
                     <div className="flex flex-col items-center justify-center py-40 border-2 border-dashed border-white/5 rounded-3xl">
-                        <p className="text-paper-muted font-serif italic text-xl mb-4">Votre bibliothèque est vide.</p>
-                        <p className="text-paper-muted/40 text-[10px] uppercase tracking-widest font-bold">Ajoutez un flux pour commencer votre lecture.</p>
+                        <p className="text-paper-muted font-serif italic text-xl mb-4">
+                            {debouncedQuery ? `Aucun article ne correspond à "${debouncedQuery}".` : 'Votre bibliothèque est vide.'}
+                        </p>
+                        <p className="text-paper-muted/40 text-[10px] uppercase tracking-widest font-bold">
+                            {debouncedQuery ? "Tentez une recherche plus large." : "Ajoutez un flux pour commencer votre lecture."}
+                        </p>
                     </div>
                 )}
             </div>
@@ -260,10 +307,7 @@ export function DashboardPage({ selectedFeedId }: DashboardPageProps) {
                                     toggleReadMutation.mutate({ id: nextArticle.id, is_read: true });
                                 }
                             } else if (hasNextPage) {
-                                fetchNextPage().then(() => {
-                                    // Logic to select next after fetch could be here, 
-                                    // but usually we wait for state update.
-                                });
+                                fetchNextPage();
                             } else {
                                 setSelectedArticle(null);
                             }

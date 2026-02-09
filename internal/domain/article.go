@@ -42,4 +42,5 @@ type ArticleRepository interface {
 	ToggleFavorite(id uuid.UUID) error
 	GetFavorites(userID uuid.UUID, limit, offset int) ([]*Article, error)
 	CountUnread(feedID uuid.UUID) (int, error)
+	Search(userID uuid.UUID, query string, limit, offset int) ([]*Article, error)
 }

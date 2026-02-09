@@ -355,3 +355,36 @@ func (h *ArticleHandler) GetFavorites(w http.ResponseWriter, r *http.Request) {
 
 	respondJSON(w, http.StatusOK, articles)
 }
+
+// Search handles GET /api/v1/articles/search
+func (h *ArticleHandler) Search(w http.ResponseWriter, r *http.Request) {
+	userID, err := h.getUserFromRequest(r)
+	if err != nil {
+		respondError(w, http.StatusUnauthorized, "Not authenticated")
+		return
+	}
+
+	query := r.URL.Query().Get("q")
+	if query == "" {
+		respondJSON(w, http.StatusOK, []*domain.Article{})
+		return
+	}
+
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	if limit <= 0 || limit > 100 {
+		limit = 50
+	}
+
+	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
+	if offset < 0 {
+		offset = 0
+	}
+
+	articles, err := h.articleRepo.Search(userID, query, limit, offset)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "Failed to search articles")
+		return
+	}
+
+	respondJSON(w, http.StatusOK, articles)
+}

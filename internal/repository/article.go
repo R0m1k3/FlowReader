@@ -411,6 +411,91 @@ func (r *ArticleRepository) scanArticles(rows pgx.Rows) ([]*domain.Article, erro
 	return articles, nil
 }
 
+// Search performs a full-text search on articles for a specific user.
+func (r *ArticleRepository) Search(userID uuid.UUID, query string, limit, offset int) ([]*domain.Article, error) {
+	ctx := context.Background()
+
+	// Use plainto_tsquery or websearch_to_tsquery for natural language search
+	sql := `
+		SELECT a.id, a.feed_id, a.guid, a.title, a.url, a.content, a.summary, a.author,
+		       a.image_url, a.published_at, a.is_read, a.is_favorite, a.read_at, a.created_at,
+		       f.title as feed_title,
+		       ts_rank_cd(a.tsv, websearch_to_tsquery('french', $2)) as rank
+		FROM articles a
+		JOIN feeds f ON f.id = a.feed_id
+		WHERE f.user_id = $1 AND a.tsv @@ websearch_to_tsquery('french', $2)
+		ORDER BY rank DESC, a.published_at DESC
+		LIMIT $3 OFFSET $4
+	`
+
+	rows, err := r.pool.Query(ctx, sql, userID, query, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("searching articles: %w", err)
+	}
+	defer rows.Close()
+
+	return r.scanArticlesWithRank(rows)
+}
+
+// scanArticlesWithRank scans multiple article rows with their rank.
+func (r *ArticleRepository) scanArticlesWithRank(rows pgx.Rows) ([]*domain.Article, error) {
+	var articles []*domain.Article
+	for rows.Next() {
+		var article domain.Article
+		var url, content, summary, author, imageURL, feedTitle *string
+		var publishedAt, readAt *time.Time
+		var rank float32
+
+		err := rows.Scan(
+			&article.ID,
+			&article.FeedID,
+			&article.GUID,
+			&article.Title,
+			&url,
+			&content,
+			&summary,
+			&author,
+			&imageURL,
+			&publishedAt,
+			&article.IsRead,
+			&article.IsFavorite,
+			&readAt,
+			&article.CreatedAt,
+			&feedTitle,
+			&rank,
+		)
+
+		if err != nil {
+			return nil, fmt.Errorf("scanning article with rank: %w", err)
+		}
+
+		if url != nil {
+			article.URL = *url
+		}
+		if content != nil {
+			article.Content = *content
+		}
+		if summary != nil {
+			article.Summary = *summary
+		}
+		if author != nil {
+			article.Author = *author
+		}
+		if imageURL != nil {
+			article.ImageURL = *imageURL
+		}
+		if feedTitle != nil {
+			article.FeedTitle = *feedTitle
+		}
+		article.PublishedAt = publishedAt
+		article.ReadAt = readAt
+
+		articles = append(articles, &article)
+	}
+
+	return articles, nil
+}
+
 // nullString returns nil if string is empty.
 func nullString(s string) *string {
 	if s == "" {

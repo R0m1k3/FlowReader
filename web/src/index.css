@@ -7,6 +7,8 @@
   --color-carbon-dark: #E7E5E4;
   --color-nature: #166534;
   --color-nature-light: #15803d;
+  --color-nature-dark: #0A0F0B;
+  /* Deep Forest Base */
   --color-earth: #A0522D;
   --color-paper-white: #1C1917;
   --color-paper-muted: #57534E;
@@ -18,14 +20,35 @@
   --line-height-magazine: 1.8;
 }
 
+/* Dark Mode Variables */
+.dark {
+  --color-carbon: #0A0F0B;
+  --color-carbon-light: #141C16;
+  --color-carbon-dark: #050705;
+  --color-nature: #22C55E;
+  --color-nature-light: #4ADE80;
+  --color-paper-white: #F9F7F1;
+  --color-paper-muted: #A8A29E;
+}
+
 @utility nature-glow {
   box-shadow: 0 4px 20px rgba(22, 101, 52, 0.15);
+}
+
+.dark .nature-glow {
+  box-shadow: 0 4px 25px rgba(34, 197, 94, 0.2);
 }
 
 @utility paper-panel {
   background: #FFFFFF;
   border: 1px solid #E7E5E4;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+}
+
+.dark .paper-panel {
+  background: var(--color-carbon-light);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3);
 }
 
 @layer base {
@@ -38,6 +61,12 @@
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.2'/%3E%3C/svg%3E");
     background-blend-mode: multiply;
     background-repeat: repeat;
+    transition: background-color 0.5s ease, color 0.5s ease;
+  }
+
+  .dark body {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+    background-blend-mode: screen;
   }
 
   h1,
@@ -104,7 +133,11 @@
   }
 
   .input-field {
-    @apply bg-white border border-carbon-dark text-paper-white px-4 py-3 rounded-lg focus:border-nature/50 focus:ring-1 focus:ring-nature/50 outline-none transition-all placeholder:text-paper-muted/50 shadow-sm;
+    @apply bg-white border border-carbon-dark text-paper-white px-4 py-3 rounded-lg focus:border-nature/50 focus:ring-1 focus:ring-nature/50 outline-none transition-all placeholder:text-paper-muted/50 shadow-sm transition-all;
+  }
+
+  .dark .input-field {
+    @apply bg-carbon-light border-white/5 text-paper-white placeholder:text-paper-muted/30;
   }
 
   .magazine-content {
