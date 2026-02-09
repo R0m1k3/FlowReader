@@ -61,10 +61,14 @@ func main() {
 	wsHandler := handler.NewWSHandler(hub, authService)
 	adminHandler := handler.NewAdminHandler(userRepo, authService)
 
-	// Start background feed fetcher
+	// Start background workers
 	fetcher := worker.NewFeedFetcher(fetchService, 15*time.Minute, 5)
 	fetcher.Start()
 	defer fetcher.Stop()
+
+	cleaner := worker.NewCleaner(articleRepo, 24*time.Hour)
+	cleaner.Start()
+	defer cleaner.Stop()
 
 	// Initialize router
 	r := chi.NewRouter()

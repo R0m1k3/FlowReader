@@ -150,15 +150,14 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
                     </h2>
 
                     {article.ai_summary ? (
-                        <div className="bg-nature/5 border-l-4 border-nature p-4 rounded-r-lg animate-fade-in relative my-2">
-                            <span className="absolute -top-3 left-2 text-xl filter drop-shadow-sm">✨</span>
-                            <p className="text-paper-white text-sm leading-relaxed font-reading italic">
-                                {article.ai_summary}
-                            </p>
+                        <div className="flex items-center space-x-2 text-nature/80">
+                            <span className="text-sm px-2 py-0.5 bg-nature/10 rounded-full font-medium flex items-center">
+                                <span className="mr-1">✨</span> Smart Digest prêt
+                            </span>
                         </div>
                     ) : article.summary && (
-                        <p className="text-paper-muted/90 text-sm leading-relaxed line-clamp-3 font-reading group-hover:text-paper-white transition-colors">
-                            {article.summary.replace(/<[^>]*>?/gm, '').substring(0, 160)}...
+                        <p className="text-paper-muted/90 text-sm leading-relaxed line-clamp-2 font-reading group-hover:text-paper-white transition-colors">
+                            {article.summary.replace(/<[^>]*>?/gm, '').substring(0, 120)}...
                         </p>
                     )}
 

@@ -1,4 +1,4 @@
-import type { Article } from '../api/articles';
+import { type Article, articlesApi } from '../api/articles';
 
 interface ReaderViewProps {
     article: Article;
@@ -59,9 +59,39 @@ export function ReaderView({ article, onClose, onToggleFavorite }: ReaderViewPro
                             <span>{article.published_at ? new Date(article.published_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Aujourd\'hui'}</span>
                         </div>
 
-                        <h1 className="text-4xl md:text-6xl font-serif text-paper-white leading-[1.15] italic-nature tracking-tight">
+                        <h1 className="text-4xl md:text-6xl font-serif text-paper-white leading-[1.15] italic-nature tracking-tight mb-8">
                             {article.title}
                         </h1>
+
+                        {/* Smart Digest Section */}
+                        {article.ai_summary ? (
+                            <div className="bg-nature/5 border-l-4 border-nature p-6 rounded-r-2xl mb-12 animate-fade-in shadow-sm">
+                                <h3 className="text-nature font-black text-[10px] uppercase tracking-[0.2em] mb-4 flex items-center">
+                                    <span className="mr-2 text-base">✨</span> Smart Digest
+                                </h3>
+                                <p className="text-paper-white text-lg leading-relaxed font-reading italic">
+                                    {article.ai_summary}
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="mb-12">
+                                <button
+                                    onClick={async (e) => {
+                                        e.stopPropagation();
+                                        try {
+                                            await articlesApi.summarize(article.id);
+                                            // The WS hub will trigger an update, but we could also show a loading state here
+                                        } catch (err) {
+                                            console.error("Failed to summarize:", err);
+                                        }
+                                    }}
+                                    className="group flex items-center space-x-3 bg-nature/5 hover:bg-nature text-nature hover:text-white border border-nature/20 px-6 py-3 rounded-full transition-all duration-500"
+                                >
+                                    <span className="text-xl group-hover:rotate-12 transition-transform">✨</span>
+                                    <span className="text-[10px] uppercase tracking-[0.2em] font-black">Générer le Smart Digest</span>
+                                </button>
+                            </div>
+                        )}
                     </header>
 
                     <div

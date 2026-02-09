@@ -521,6 +521,23 @@ func (r *ArticleRepository) UpdateAISummary(id uuid.UUID, summary string) error 
 	return nil
 }
 
+// DeleteOldArticles removes articles older than the specified duration, except for favorites.
+func (r *ArticleRepository) DeleteOldArticles(ctx context.Context, olderThan time.Duration) (int64, error) {
+	threshold := time.Now().Add(-olderThan)
+
+	query := `
+		DELETE FROM articles 
+		WHERE created_at < $1 AND is_favorite = false
+	`
+
+	result, err := r.pool.Exec(ctx, query, threshold)
+	if err != nil {
+		return 0, fmt.Errorf("deleting old articles: %w", err)
+	}
+
+	return result.RowsAffected(), nil
+}
+
 // nullString returns nil if string is empty.
 func nullString(s string) *string {
 	if s == "" {
