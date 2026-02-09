@@ -11,6 +11,7 @@ services:
     environment:
       - PORT=8080
       - DATABASE_URL=postgres://flowreader:flowreader@db:5432/flowreader?sslmode=disable
+      - OPENROUTER_API_KEY=votre_clef_ici
     depends_on:
       db:
         condition: service_healthy
