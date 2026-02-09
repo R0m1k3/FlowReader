@@ -20,6 +20,7 @@ type ArticleHandler struct {
 	authService *service.AuthService
 	aiService   *service.AIService
 	sanitizer   *utils.ContentSanitizer
+	extractor   *utils.ContentExtractor
 	hub         *ws.Hub
 }
 
@@ -31,6 +32,7 @@ func NewArticleHandler(articleRepo domain.ArticleRepository, feedService *servic
 		authService: authService,
 		aiService:   aiService,
 		sanitizer:   utils.NewContentSanitizer(),
+		extractor:   utils.NewContentExtractor(),
 		hub:         hub,
 	}
 }
@@ -429,6 +431,14 @@ func (h *ArticleHandler) Summarize(w http.ResponseWriter, r *http.Request) {
 	content := article.Content
 	if content == "" {
 		content = article.Summary
+	}
+
+	// Try to extract full content from URL if available
+	if article.URL != "" {
+		fullContent, err := h.extractor.Extract(r.Context(), article.URL)
+		if err == nil && len(fullContent) > len(content) {
+			content = "--- CONTENU COMPLET EXTRAIT DU SITE WEB ---\n" + fullContent
+		}
 	}
 
 	aiInput := fmt.Sprintf("Titre: %s\n\nContenu: %s", article.Title, content)
