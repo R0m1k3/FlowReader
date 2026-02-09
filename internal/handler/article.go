@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -17,16 +18,18 @@ type ArticleHandler struct {
 	articleRepo domain.ArticleRepository
 	feedService *service.FeedService
 	authService *service.AuthService
+	aiService   *service.AIService
 	sanitizer   *utils.ContentSanitizer
 	hub         *ws.Hub
 }
 
 // NewArticleHandler creates a new article handler.
-func NewArticleHandler(articleRepo domain.ArticleRepository, feedService *service.FeedService, authService *service.AuthService, hub *ws.Hub) *ArticleHandler {
+func NewArticleHandler(articleRepo domain.ArticleRepository, feedService *service.FeedService, authService *service.AuthService, aiService *service.AIService, hub *ws.Hub) *ArticleHandler {
 	return &ArticleHandler{
 		articleRepo: articleRepo,
 		feedService: feedService,
 		authService: authService,
+		aiService:   aiService,
 		sanitizer:   utils.NewContentSanitizer(),
 		hub:         hub,
 	}
@@ -387,4 +390,70 @@ func (h *ArticleHandler) Search(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondJSON(w, http.StatusOK, articles)
+}
+
+// Summarize handles POST /api/v1/articles/{id}/summarize
+func (h *ArticleHandler) Summarize(w http.ResponseWriter, r *http.Request) {
+	userID, err := h.getUserFromRequest(r)
+	if err != nil {
+		respondError(w, http.StatusUnauthorized, "Not authenticated")
+		return
+	}
+
+	articleID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid article ID")
+		return
+	}
+
+	article, err := h.articleRepo.GetByID(articleID)
+	if err != nil || article == nil {
+		respondError(w, http.StatusNotFound, "Article not found")
+		return
+	}
+
+	// Verify feed ownership
+	_, err = h.feedService.GetFeed(article.FeedID, userID)
+	if err != nil {
+		respondError(w, http.StatusForbidden, "Access denied")
+		return
+	}
+
+	// If already summarized, return it
+	if article.AISummary != "" {
+		respondJSON(w, http.StatusOK, map[string]string{"summary": article.AISummary})
+		return
+	}
+
+	// Context for AI is title + content (or summary if content empty)
+	content := article.Content
+	if content == "" {
+		content = article.Summary
+	}
+
+	aiInput := fmt.Sprintf("Titre: %s\n\nContenu: %s", article.Title, content)
+
+	// Summary generation (can be slow, but for this demo/small app we do it synchronously
+	// or we could use WS to notify when done. Here we follow the simple POST -> String pattern).
+	summary, err := h.aiService.Summarize(r.Context(), aiInput)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "Failed to generate summary: "+err.Error())
+		return
+	}
+
+	// Save to DB
+	if err := h.articleRepo.UpdateAISummary(articleID, summary); err != nil {
+		respondError(w, http.StatusInternalServerError, "Failed to persist summary")
+		return
+	}
+
+	// Broadcast update via WebSocket
+	if h.hub != nil {
+		h.hub.Broadcast("article_updated", map[string]interface{}{
+			"id":         articleID,
+			"ai_summary": summary,
+		})
+	}
+
+	respondJSON(w, http.StatusOK, map[string]string{"summary": summary})
 }

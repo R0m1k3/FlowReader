@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useSwipeable } from 'react-swipeable';
-import type { Article } from '../api/articles';
+import { type Article, articlesApi } from '../api/articles';
 
 interface ArticleCardProps {
     article: Article;
@@ -12,6 +12,7 @@ interface ArticleCardProps {
 export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }: ArticleCardProps) {
     const [swipeOffset, setSwipeOffset] = useState(0);
     const [isSwiping, setIsSwiping] = useState(false);
+    const [isSummarizing, setIsSummarizing] = useState(false);
 
     const handlers = useSwipeable({
         onSwiping: (event) => {
@@ -43,6 +44,22 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
     const resetSwipe = () => {
         setSwipeOffset(0);
         setIsSwiping(false);
+    };
+
+    const handleSummarize = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (article.ai_summary || isSummarizing) return;
+
+        setIsSummarizing(true);
+        try {
+            await articlesApi.summarize(article.id);
+            // The article will be updated via WebSocket broadcast
+        } catch (error) {
+            console.error('Failed to summarize:', error);
+            alert('Erreur lors de la génération du résumé. Vérifiez votre clé API OpenRouter.');
+        } finally {
+            setIsSummarizing(false);
+        }
     };
 
     return (
@@ -132,7 +149,14 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
                         {article.title}
                     </h2>
 
-                    {article.summary && (
+                    {article.ai_summary ? (
+                        <div className="bg-nature/10 border-l-2 border-nature p-3 rounded-r-lg animate-fade-in relative group/summary">
+                            <span className="absolute -top-2 -left-1 text-lg">✨</span>
+                            <p className="text-paper-white text-sm leading-relaxed font-reading italic">
+                                {article.ai_summary}
+                            </p>
+                        </div>
+                    ) : article.summary && (
                         <p className="text-paper-muted text-sm leading-relaxed line-clamp-3 font-reading opacity-80 decoration-nature/0 group-hover:opacity-100 transition-opacity">
                             {article.summary.replace(/<[^>]*>?/gm, '').substring(0, 160)}...
                         </p>
@@ -163,6 +187,24 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
                                 <svg className="w-4 h-4" fill={article.is_favorite ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.382-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                                 </svg>
+                            </button>
+                            <button
+                                onClick={handleSummarize}
+                                disabled={isSummarizing || !!article.ai_summary}
+                                className={`p-1.5 rounded-full transition-all duration-300 flex items-center justify-center ${article.ai_summary
+                                    ? 'text-nature bg-nature/10 opacity-50 cursor-default'
+                                    : isSummarizing
+                                        ? 'text-nature animate-pulse'
+                                        : 'text-paper-muted hover:text-nature hover:bg-nature/10'}`}
+                                title={article.ai_summary ? "Résumé généré" : "Générer un résumé IA (Smart Digest)"}
+                            >
+                                {isSummarizing ? (
+                                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                ) : (
+                                    <span className="text-sm leading-none">✨</span>
+                                )}
                             </button>
                         </div>
 

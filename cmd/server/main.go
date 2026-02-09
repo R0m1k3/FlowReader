@@ -46,6 +46,7 @@ func main() {
 	// Initialize services
 	authService := service.NewAuthService(userRepo, sessionRepo)
 	feedService := service.NewFeedService(feedRepo)
+	aiService := service.NewAIService()
 
 	// Initialize WS Hub
 	hub := ws.NewHub()
@@ -56,7 +57,7 @@ func main() {
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(authService)
 	feedHandler := handler.NewFeedHandler(feedService, fetchService, authService)
-	articleHandler := handler.NewArticleHandler(articleRepo, feedService, authService, hub)
+	articleHandler := handler.NewArticleHandler(articleRepo, feedService, authService, aiService, hub)
 	wsHandler := handler.NewWSHandler(hub, authService)
 	adminHandler := handler.NewAdminHandler(userRepo, authService)
 
@@ -129,6 +130,7 @@ func main() {
 			r.Post("/{id}/read", articleHandler.MarkRead)
 			r.Delete("/{id}/read", articleHandler.MarkUnread)
 			r.Post("/{id}/favorite", articleHandler.ToggleFavorite)
+			r.Post("/{id}/summarize", articleHandler.Summarize)
 		})
 
 		// WebSocket route

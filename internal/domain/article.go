@@ -15,6 +15,7 @@ type Article struct {
 	URL         string     `json:"url,omitempty"`
 	Content     string     `json:"content,omitempty"`
 	Summary     string     `json:"summary,omitempty"`
+	AISummary   string     `json:"ai_summary,omitempty"`
 	Author      string     `json:"author,omitempty"`
 	ImageURL    string     `json:"image_url,omitempty"`
 	PublishedAt *time.Time `json:"published_at,omitempty"`
@@ -43,4 +44,5 @@ type ArticleRepository interface {
 	GetFavorites(userID uuid.UUID, limit, offset int) ([]*Article, error)
 	CountUnread(feedID uuid.UUID) (int, error)
 	Search(userID uuid.UUID, query string, limit, offset int) ([]*Article, error)
+	UpdateAISummary(id uuid.UUID, summary string) error
 }

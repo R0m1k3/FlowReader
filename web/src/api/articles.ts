@@ -17,6 +17,7 @@ export interface Article {
     url?: string;
     content?: string;
     summary?: string;
+    ai_summary?: string;
     author?: string;
     image_url?: string;
     published_at?: string;
@@ -117,5 +118,13 @@ export const articlesApi = {
             credentials: 'include',
         });
         return handleResponse<Article[]>(response);
+    },
+
+    async summarize(id: string): Promise<{ summary: string }> {
+        const response = await fetch(`${API_BASE}/articles/${id}/summarize`, {
+            method: 'POST',
+            credentials: 'include',
+        });
+        return handleResponse(response);
     },
 };

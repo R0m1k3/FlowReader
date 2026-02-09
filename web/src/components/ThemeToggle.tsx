@@ -20,7 +20,7 @@ export function ThemeToggle() {
     return (
         <button
             onClick={toggleTheme}
-            className="p-2 rounded-lg border border-nature/10 text-nature hover:bg-nature/5 transition-all duration-300"
+            className="w-8 h-8 flex items-center justify-center rounded-full border border-nature/10 text-nature hover:bg-nature/5 transition-all duration-300"
             title={theme === 'light' ? 'Activer le mode sombre' : 'Activer le mode clair'}
         >
             {theme === 'light' ? (

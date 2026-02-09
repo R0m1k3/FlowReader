@@ -80,10 +80,10 @@ export function Sidebar({ onSelectFeed, selectedFeedId }: SidebarProps) {
                             <ThemeToggle />
                             <button
                                 onClick={() => setIsAddModalOpen(true)}
-                                className="w-8 h-8 flex items-center justify-center rounded-full border border-nature/20 text-nature hover:bg-nature hover:text-white transition-all duration-300 shadow-sm"
+                                className="w-8 h-8 flex items-center justify-center rounded-full border border-nature/20 text-nature hover:bg-nature/10 hover:text-nature-light active:scale-95 transition-all duration-300 shadow-sm"
                                 title="Ajouter un flux"
                             >
-                                <span className="text-xl leading-none">+</span>
+                                <span className="text-xl leading-none" style={{ marginBottom: '1px' }}>+</span>
                             </button>
                         </div>
                     </div>
