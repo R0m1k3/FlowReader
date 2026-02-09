@@ -106,14 +106,14 @@ export function MobileReaderView({ article, onClose, onToggleFavorite, onNext, o
                 </div>
             </div>
 
-            {/* Floating Close Button for Mobile - Easier thumb reach */}
-            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+            {/* Fixed Close Button for Mobile - Top Right */}
+            <div className="fixed top-6 right-6 z-50 pointer-events-none">
                 <button
                     onClick={(e) => {
                         e.stopPropagation();
                         onClose();
                     }}
-                    className="w-12 h-12 bg-paper-white text-carbon-light shadow-2xl border border-white/10 rounded-full flex items-center justify-center active:scale-95 transition-all duration-300 pointer-events-auto hover:bg-nature"
+                    className="w-10 h-10 bg-carbon/80 backdrop-blur-md text-white border border-white/10 rounded-full flex items-center justify-center active:scale-95 transition-all duration-300 pointer-events-auto hover:bg-nature shadow-lg"
                 >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
