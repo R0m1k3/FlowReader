@@ -63,7 +63,7 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
     };
 
     return (
-        <div className="relative overflow-hidden rounded-xl">
+        <div className="relative overflow-visible pb-4">
             {/* Action Layers behind the card */}
             <div className="absolute inset-0 flex items-center justify-between px-6 pointer-events-none">
                 {/* Left side swipe (Mark as Read) */}
@@ -92,10 +92,10 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
             {/* Main Interactive Card */}
             <article
                 {...handlers}
-                className={`magazine-card group cursor-pointer flex flex-col h-full relative z-10 bg-carbon overflow-visible rounded-xl border border-transparent hover:border-nature/10 transition-all ${isSwiping ? '' : 'duration-500 ease-out'}`}
+                className={`magazine-card group cursor-pointer flex flex-col h-full relative z-10 bg-white dark:bg-carbon overflow-visible rounded-xl border border-carbon-dark/30 dark:border-white/5 transition-all ${isSwiping ? '' : 'duration-500 ease-out'} hover:border-nature/20`}
                 style={{
                     transform: `translateX(${swipeOffset}px)`,
-                    boxShadow: '0 10px 30px -5px rgba(0, 0, 0, 0.7), 0 8px 15px -8px rgba(0, 0, 0, 0.8)'
+                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.1)'
                 }}
                 onClick={() => !isSwiping && Math.abs(swipeOffset) < 5 && onClick(article)}
             >
@@ -122,7 +122,7 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
                 )}
 
                 {/* Image Placeholder with Gradient Overlay */}
-                <div className="aspect-[16/10] overflow-hidden rounded-t-xl rounded-b-none bg-carbon-light relative mb-6">
+                <div className="aspect-[16/9] overflow-hidden rounded-t-xl rounded-b-none bg-carbon relative mb-4">
 
 
                     {/* Visual placeholder or real image */}
@@ -143,27 +143,26 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 flex flex-col px-1 gap-4">
-                    <h2 className={`text-xl font-serif transition-colors duration-300 group-hover:text-nature-light ${article.is_read ? 'text-paper-muted font-normal' : 'text-paper-white font-black'}`}
-                        style={article.is_read ? {} : { textShadow: '0 1px 1px rgba(0,0,0,0.05)' }}
+                <div className="flex-1 flex flex-col px-5 gap-3">
+                    <h2 className={`text-2xl font-serif leading-snug transition-colors duration-300 group-hover:text-nature-light ${article.is_read ? 'text-paper-muted font-normal' : 'text-paper-white font-black'}`}
                     >
                         {article.title}
                     </h2>
 
                     {article.ai_summary ? (
-                        <div className="bg-nature/10 border-l-2 border-nature p-3 rounded-r-lg animate-fade-in relative group/summary">
-                            <span className="absolute -top-2 -left-1 text-lg">✨</span>
+                        <div className="bg-nature/5 border-l-4 border-nature p-4 rounded-r-lg animate-fade-in relative my-2">
+                            <span className="absolute -top-3 left-2 text-xl filter drop-shadow-sm">✨</span>
                             <p className="text-paper-white text-sm leading-relaxed font-reading italic">
                                 {article.ai_summary}
                             </p>
                         </div>
                     ) : article.summary && (
-                        <p className="text-paper-muted text-sm leading-relaxed line-clamp-3 font-reading opacity-80 decoration-nature/0 group-hover:opacity-100 transition-opacity">
+                        <p className="text-paper-muted/90 text-sm leading-relaxed line-clamp-3 font-reading group-hover:text-paper-white transition-colors">
                             {article.summary.replace(/<[^>]*>?/gm, '').substring(0, 160)}...
                         </p>
                     )}
 
-                    <div className="mt-auto flex items-center justify-between pt-6 pb-4 border-t border-white/5">
+                    <div className="mt-auto flex items-center justify-between pt-4 pb-5 border-t border-carbon-dark/20 dark:border-white/5">
                         <div className="flex space-x-2">
                             <button
                                 onClick={(e) => {
