@@ -92,9 +92,10 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
             {/* Main Interactive Card */}
             <article
                 {...handlers}
-                className={`magazine-card group cursor-pointer flex flex-col h-full relative z-10 bg-carbon overflow-visible shadow-xl shadow-paper-muted/20 hover:shadow-2xl hover:shadow-nature/20 rounded-xl border border-transparent hover:border-nature/10 transition-transform ${isSwiping ? '' : 'duration-500 ease-out'}`}
+                className={`magazine-card group cursor-pointer flex flex-col h-full relative z-10 bg-carbon overflow-visible rounded-xl border border-transparent hover:border-nature/10 transition-all ${isSwiping ? '' : 'duration-500 ease-out'}`}
                 style={{
-                    transform: `translateX(${swipeOffset}px)`
+                    transform: `translateX(${swipeOffset}px)`,
+                    boxShadow: '0 10px 30px -5px rgba(0, 0, 0, 0.7), 0 8px 15px -8px rgba(0, 0, 0, 0.8)'
                 }}
                 onClick={() => !isSwiping && Math.abs(swipeOffset) < 5 && onClick(article)}
             >
