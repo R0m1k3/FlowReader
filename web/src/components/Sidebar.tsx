@@ -7,9 +7,11 @@ import { AddFeedModal } from './AddFeedModal';
 interface SidebarProps {
     onSelectFeed: (feedId: string | null) => void;
     selectedFeedId: string | null;
+    onEnterFocus: () => void;
+    isFocusMode: boolean;
 }
 
-export function Sidebar({ onSelectFeed, selectedFeedId }: SidebarProps) {
+export function Sidebar({ onSelectFeed, selectedFeedId, onEnterFocus, isFocusMode }: SidebarProps) {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const queryClient = useQueryClient();
 
@@ -138,6 +140,25 @@ export function Sidebar({ onSelectFeed, selectedFeedId }: SidebarProps) {
                                         <span className={`w-1.5 h-1.5 rounded-full bg-nature mr-3 transition-opacity ${selectedFeedId === 'favorites' ? 'opacity-100' : 'opacity-0 group-hover/item:opacity-100'}`}></span>
                                         Mes Favoris
                                     </span>
+                                </button>
+                            </div>
+
+                            {/* Focus Mode Entry */}
+                            <div className="relative group/item mb-8">
+                                <button
+                                    onClick={onEnterFocus}
+                                    className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg transition-all duration-300 text-left ${isFocusMode
+                                        ? 'bg-nature text-white shadow-lg shadow-nature/20'
+                                        : 'bg-nature/5 text-nature hover:bg-nature hover:text-white border border-nature/20'
+                                        }`}
+                                >
+                                    <span className="text-sm font-bold truncate flex items-center uppercase tracking-wider text-[11px]">
+                                        <svg className="w-4 h-4 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                        </svg>
+                                        Mode Focus
+                                    </span>
+                                    {/* You could add a badge here if we had global unread count available in sidebar props or context */}
                                 </button>
                             </div>
                             {feeds?.map((feed) => (

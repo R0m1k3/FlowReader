@@ -11,6 +11,7 @@ import type { Article } from '../api/articles';
 
 interface DashboardPageProps {
     selectedFeedId: string | null;
+    onEnterFocus: () => void;
 }
 
 // Helper Hook for Responsive Split
@@ -27,7 +28,7 @@ function useIsMobile() {
     return isMobile;
 }
 
-export function DashboardPage({ selectedFeedId }: DashboardPageProps) {
+export function DashboardPage({ selectedFeedId, onEnterFocus }: DashboardPageProps) {
     const queryClient = useQueryClient();
     const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
     const isMobile = useIsMobile();
@@ -131,6 +132,41 @@ export function DashboardPage({ selectedFeedId }: DashboardPageProps) {
                         </div>
                     </div>
                 </header>
+
+                {/* Focus Mode CTA Widget */}
+                {!selectedFeedId && articles && articles.length > 0 && (
+                    <div className="mb-16 relative overflow-hidden rounded-2xl bg-gradient-to-r from-nature to-nature-light shadow-2xl items-center flex flex-col md:flex-row p-8 md:p-12 hover:scale-[1.01] transition-transform cursor-pointer group" onClick={onEnterFocus}>
+                        {/* decorative circles */}
+                        <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-colors pointer-events-none"></div>
+                        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-black/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                        <div className="flex-1 z-10 text-center md:text-left mb-6 md:mb-0">
+                            <div className="flex items-center justify-center md:justify-start space-x-2 mb-2">
+                                <span className="bg-white/20 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-widest backdrop-blur-sm">
+                                    Nouveauté
+                                </span>
+                            </div>
+                            <h2 className="text-3xl md:text-4xl font-serif italic text-white mb-2 text-shadow-sm">
+                                Votre session de lecture
+                            </h2>
+                            <p className="text-white/80 font-medium text-sm md:text-base max-w-xl">
+                                {articles.filter(a => !a.is_read).length} articles non lus vous attendent. Passez en mode Focus pour une lecture fluide et sans distraction.
+                            </p>
+                        </div>
+
+                        <div className="z-10">
+                            <button
+                                onClick={(e) => { e.stopPropagation(); onEnterFocus(); }}
+                                className="bg-white text-nature font-bold text-sm uppercase tracking-widest px-8 py-4 rounded-full shadow-lg hover:bg-gray-50 hover:shadow-xl hover:scale-105 transition-all flex items-center"
+                            >
+                                Lancer le Mode Focus
+                                <svg className="w-5 h-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Grid */}
                 {articles && articles.length > 0 ? (
