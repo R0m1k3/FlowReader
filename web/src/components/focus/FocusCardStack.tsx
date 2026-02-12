@@ -128,8 +128,7 @@ export function FocusCardStack({ articles, onMarkRead, onKeep, onEmpty }: FocusC
                 </AnimatePresence>
             </div>
 
-            {/* Static Action Buttons (for mouse users who prefer clicking) */}
-            <div className="absolute bottom-10 left-0 right-0 flex justify-center gap-8 z-20">
+            <div className="absolute bottom-10 left-0 right-0 flex justify-center gap-8 z-20 items-center">
                 <button
                     onClick={() => {
                         onKeep(topArticle.id);
@@ -142,6 +141,23 @@ export function FocusCardStack({ articles, onMarkRead, onKeep, onEmpty }: FocusC
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" transform="rotate(-90 12 12)" />
                     </svg>
                 </button>
+
+                {/* Undo Button */}
+                {currentIndex > 0 && (
+                    <button
+                        onClick={() => {
+                            setCurrentIndex(prev => Math.max(0, prev - 1));
+                            x.set(0); // Reset position
+                        }}
+                        className="p-3 rounded-full bg-white/10 backdrop-blur-md text-white hover:bg-white/20 hover:scale-105 transition-all border border-white/20"
+                        title="Revenir en arrière"
+                    >
+                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                        </svg>
+                    </button>
+                )}
+
                 <button
                     onClick={() => {
                         onMarkRead(topArticle.id);
