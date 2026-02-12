@@ -19,11 +19,21 @@ export function FocusPage({ onExit }: FocusPageProps) {
         staleTime: 0, // Always fresh for focus mode
     });
 
+    // Stable deck state to prevent UI jumping when articles are marked read
+    const [deck, setDeck] = useState<typeof articles>([]);
+
+    // Initialize/Append deck when data arrives
+    if (articles && (!deck || deck.length === 0)) {
+        setDeck(articles);
+    }
+    // Note: A more robust implementation would append new unique items if we implemented pagination/infinite scroll,
+    // but for now, snapshotting the initial load is sufficient for the "Focus Session" concept.
+
     // Mutation to mark read
     const markReadMutation = useMutation({
         mutationFn: (id: string) => articlesApi.markRead(id),
         onSuccess: () => {
-            // Invalidate main lists to sync up when returning
+            // Invalidate main lists to sync up sidebar, but our local 'deck' state won't change
             queryClient.invalidateQueries({ queryKey: ['articles'] });
             queryClient.invalidateQueries({ queryKey: ['feeds'] });
         },
@@ -35,11 +45,10 @@ export function FocusPage({ onExit }: FocusPageProps) {
 
     const handleKeep = (id: string) => {
         // Do nothing api-wise, just skip. 
-        // Or strictly speaking, we could have a "skipped" list, but for now just don't mark read.
         console.log('Skipped:', id);
     };
 
-    if (isLoading) {
+    if (isLoading && (!deck || deck.length === 0)) {
         return (
             <div className="flex items-center justify-center h-full bg-carbon/50 backdrop-blur-xl">
                 <div className="w-16 h-16 border-4 border-nature border-t-transparent rounded-full animate-spin" />
@@ -48,8 +57,8 @@ export function FocusPage({ onExit }: FocusPageProps) {
     }
 
     // Filter out locally read? No, we handle that in stack index.
-    // But if API returns empty:
-    if (!articles || articles.length === 0) {
+    // If deck is empty
+    if (!deck || deck.length === 0) {
         return <FocusEmptyState onBack={onExit} />;
     }
 
@@ -79,7 +88,7 @@ export function FocusPage({ onExit }: FocusPageProps) {
             {/* Main Deck Area */}
             <main className="flex-1 flex items-center justify-center p-4">
                 <FocusCardStack
-                    articles={articles}
+                    articles={deck}
                     onMarkRead={handleMarkRead}
                     onKeep={handleKeep}
                     onEmpty={() => setIsComplete(true)}
