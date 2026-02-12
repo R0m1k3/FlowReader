@@ -1,4 +1,5 @@
-import type { Article } from '../api/articles';
+import { useState } from 'react';
+import { type Article, articlesApi } from '../api/articles';
 
 interface ReaderViewProps {
     article: Article;
@@ -7,6 +8,9 @@ interface ReaderViewProps {
 }
 
 export function ReaderView({ article, onClose, onToggleFavorite }: ReaderViewProps) {
+    const [aiSummary, setAiSummary] = useState(article.ai_summary);
+    const [isSummarizing, setIsSummarizing] = useState(false);
+
     // Determine content to show: full content > summary > default message
     let displayContent = article.content || article.summary || '<p class="italic text-paper-muted">Aucun contenu disponible pour cet article.</p>';
 
@@ -59,9 +63,47 @@ export function ReaderView({ article, onClose, onToggleFavorite }: ReaderViewPro
                             <span>{article.published_at ? new Date(article.published_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Aujourd\'hui'}</span>
                         </div>
 
-                        <h1 className="text-4xl md:text-6xl font-serif text-paper-white leading-[1.15] italic-nature tracking-tight">
+                        <h1 className="text-4xl md:text-6xl font-serif text-paper-white leading-[1.15] italic-nature tracking-tight mb-8">
                             {article.title}
                         </h1>
+
+                        {/* Smart Digest Section */}
+                        {aiSummary ? (
+                            <div className="bg-nature/5 border-l-4 border-nature p-6 rounded-r-2xl mb-12 animate-fade-in shadow-sm">
+                                <h3 className="text-nature font-black text-[10px] uppercase tracking-[0.2em] mb-4 flex items-center">
+                                    <span className="mr-2 text-base">✨</span> Résumé
+                                </h3>
+                                <p className="text-paper-white text-lg leading-relaxed font-reading italic">
+                                    {aiSummary}
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="mb-12">
+                                <button
+                                    onClick={async (e) => {
+                                        e.stopPropagation();
+                                        setIsSummarizing(true);
+                                        try {
+                                            const res = await articlesApi.summarize(article.id);
+                                            setAiSummary(res.summary);
+                                        } catch (err) {
+                                            console.error("Failed to summarize:", err);
+                                        } finally {
+                                            setIsSummarizing(false);
+                                        }
+                                    }}
+                                    disabled={isSummarizing}
+                                    className={`group flex items-center space-x-3 bg-nature/5 hover:bg-nature text-nature hover:text-white border border-nature/20 px-6 py-3 rounded-full transition-all duration-500 ${isSummarizing ? 'opacity-50 cursor-wait' : ''}`}
+                                >
+                                    <span className={`text-xl transition-transform ${isSummarizing ? 'animate-spin' : 'group-hover:rotate-12'}`}>
+                                        {isSummarizing ? '⏳' : '✨'}
+                                    </span>
+                                    <span className="text-[10px] uppercase tracking-[0.2em] font-black">
+                                        {isSummarizing ? 'Génération en cours...' : 'Générer le résumé'}
+                                    </span>
+                                </button>
+                            </div>
+                        )}
                     </header>
 
                     <div

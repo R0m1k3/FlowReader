@@ -42,27 +42,54 @@ func Connect(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
 
 // RunMigrations executes pending database migrations.
 func RunMigrations(ctx context.Context, pool *pgxpool.Pool) error {
-	// Check if users table exists
-	var exists bool
-	err := pool.QueryRow(ctx, `
-		SELECT EXISTS (
-			SELECT FROM information_schema.tables 
-			WHERE table_schema = 'public' 
-			AND table_name = 'users'
+	// 1. Create schema_migrations table if it doesn't exist
+	_, err := pool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS schema_migrations (
+			version VARCHAR(255) PRIMARY KEY,
+			applied_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 		)
-	`).Scan(&exists)
+	`)
 	if err != nil {
-		return fmt.Errorf("checking users table: %w", err)
+		return fmt.Errorf("creating schema_migrations table: %w", err)
 	}
 
-	if exists {
-		log.Println("Database already initialized")
-		return nil
+	// 2. Get applied migrations
+	rows, err := pool.Query(ctx, "SELECT version FROM schema_migrations")
+	if err != nil {
+		return fmt.Errorf("querying applied migrations: %w", err)
+	}
+	defer rows.Close()
+
+	applied := make(map[string]bool)
+	for rows.Next() {
+		var version string
+		if err := rows.Scan(&version); err != nil {
+			return fmt.Errorf("scanning migration version: %w", err)
+		}
+		applied[version] = true
 	}
 
-	log.Println("Initializing database and applying migrations...")
+	// 3. Special case for legacy system:
+	// If 'users' table exists but 'schema_migrations' is empty,
+	// mark all migrations up to 005 as applied to avoid duplicate creation errors.
+	if len(applied) == 0 {
+		var usersExists bool
+		pool.QueryRow(ctx, "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'users')").Scan(&usersExists)
+		if usersExists {
+			log.Println("Legacy database detected, bootstrapping migration tracking...")
+			// We assume 001 to 005 are already there if users table exists in the old system
+			legacyVersions := []string{"001_create_users.up.sql", "002_create_sessions.up.sql", "003_create_feeds.up.sql", "004_add_user_roles.up.sql", "005_search_articles.up.sql"}
+			for _, v := range legacyVersions {
+				_, err := pool.Exec(ctx, "INSERT INTO schema_migrations (version) VALUES ($1)", v)
+				if err != nil {
+					log.Printf("Warning: failed to bootstrap version %s: %v", v, err)
+				}
+				applied[v] = true
+			}
+		}
+	}
 
-	// Read migration files
+	// 4. Read migration files
 	entries, err := os.ReadDir("./migrations")
 	if err != nil {
 		return fmt.Errorf("reading migrations dir: %w", err)
@@ -76,18 +103,38 @@ func RunMigrations(ctx context.Context, pool *pgxpool.Pool) error {
 	}
 	sort.Strings(upFiles)
 
+	// 5. Apply pending migrations
 	for _, file := range upFiles {
+		if applied[file] {
+			continue
+		}
+
 		log.Printf("Applying migration: %s", file)
 		content, err := os.ReadFile(filepath.Join("./migrations", file))
 		if err != nil {
 			return fmt.Errorf("reading migration %s: %w", file, err)
 		}
 
-		if _, err := pool.Exec(ctx, string(content)); err != nil {
+		// Execute in transaction
+		tx, err := pool.Begin(ctx)
+		if err != nil {
+			return fmt.Errorf("starting transaction for %s: %w", file, err)
+		}
+		defer tx.Rollback(ctx)
+
+		if _, err := tx.Exec(ctx, string(content)); err != nil {
 			return fmt.Errorf("executing migration %s: %w", file, err)
+		}
+
+		if _, err := tx.Exec(ctx, "INSERT INTO schema_migrations (version) VALUES ($1)", file); err != nil {
+			return fmt.Errorf("recording migration %s: %w", file, err)
+		}
+
+		if err := tx.Commit(ctx); err != nil {
+			return fmt.Errorf("committing migration %s: %w", file, err)
 		}
 	}
 
-	log.Println("All migrations applied successfully")
+	log.Println("Database schema is up to date")
 	return nil
 }

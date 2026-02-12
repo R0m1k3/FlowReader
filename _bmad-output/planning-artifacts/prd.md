@@ -115,8 +115,8 @@ L'objectif est une expérience de lecture complète et fiable pour plusieurs uti
 
 ### Reading Experience
 
-* **FR8**: Dashboard unifié "Nouveautés" trié par date.
-* **FR9**: Mode "Lecture Plaisir" avec extraction du contenu principal (nettoyage HTML).
+* **FR8**: Dashboard unifié "Nouveautés" trié par date avec **scroll infini** pour une navigation fluide.
+* **FR9**: Mode "Lecture Plaisir" avec extraction du contenu principal et **typographie optimisée** (suppression de l'italique sur les titres pour un meilleur confort visuel).
 * **FR10**: Marquage "Lu" manuel ou automatique (scroll/swipe).
 * **FR11**: Marquage "Tout lu" par flux ou global.
 * **FR12**: Gestion des Favoris ("Star" / "Read Later").

@@ -27,8 +27,8 @@ func (r *ArticleRepository) Create(article *domain.Article) error {
 	ctx := context.Background()
 
 	query := `
-		INSERT INTO articles (id, feed_id, guid, title, url, content, summary, author, image_url, published_at, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		INSERT INTO articles (id, feed_id, guid, title, url, content, summary, ai_summary, author, image_url, published_at, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 		ON CONFLICT (feed_id, guid) DO NOTHING
 	`
 
@@ -40,6 +40,7 @@ func (r *ArticleRepository) Create(article *domain.Article) error {
 		nullString(article.URL),
 		nullString(article.Content),
 		nullString(article.Summary),
+		nullString(article.AISummary),
 		nullString(article.Author),
 		nullString(article.ImageURL),
 		article.PublishedAt,
@@ -59,8 +60,8 @@ func (r *ArticleRepository) CreateBatch(articles []*domain.Article) error {
 
 	batch := &pgx.Batch{}
 	query := `
-		INSERT INTO articles (id, feed_id, guid, title, url, content, summary, author, image_url, published_at, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		INSERT INTO articles (id, feed_id, guid, title, url, content, summary, ai_summary, author, image_url, published_at, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 		ON CONFLICT (feed_id, guid) DO NOTHING
 	`
 
@@ -73,6 +74,7 @@ func (r *ArticleRepository) CreateBatch(articles []*domain.Article) error {
 			nullString(article.URL),
 			nullString(article.Content),
 			nullString(article.Summary),
+			nullString(article.AISummary),
 			nullString(article.Author),
 			nullString(article.ImageURL),
 			article.PublishedAt,
@@ -97,7 +99,7 @@ func (r *ArticleRepository) GetByID(id uuid.UUID) (*domain.Article, error) {
 	ctx := context.Background()
 
 	query := `
-		SELECT a.id, a.feed_id, a.guid, a.title, a.url, a.content, a.summary, a.author, 
+		SELECT a.id, a.feed_id, a.guid, a.title, a.url, a.content, a.summary, a.ai_summary, a.author, 
 		       a.image_url, a.published_at, a.is_read, a.is_favorite, a.read_at, a.created_at,
 		       f.title as feed_title
 		FROM articles a
@@ -121,7 +123,7 @@ func (r *ArticleRepository) GetByFeedID(feedID uuid.UUID, limit, offset int) ([]
 	ctx := context.Background()
 
 	query := `
-		SELECT a.id, a.feed_id, a.guid, a.title, a.url, a.content, a.summary, a.author,
+		SELECT a.id, a.feed_id, a.guid, a.title, a.url, a.content, a.summary, a.ai_summary, a.author,
 		       a.image_url, a.published_at, a.is_read, a.is_favorite, a.read_at, a.created_at,
 		       f.title as feed_title
 		FROM articles a
@@ -147,7 +149,7 @@ func (r *ArticleRepository) GetByUserID(userID uuid.UUID, limit, offset int, unr
 	var query string
 	if unreadOnly {
 		query = `
-			SELECT a.id, a.feed_id, a.guid, a.title, a.url, a.content, a.summary, a.author,
+			SELECT a.id, a.feed_id, a.guid, a.title, a.url, a.content, a.summary, a.ai_summary, a.author,
 			       a.image_url, a.published_at, a.is_read, a.is_favorite, a.read_at, a.created_at,
 			       f.title as feed_title
 			FROM articles a
@@ -158,7 +160,7 @@ func (r *ArticleRepository) GetByUserID(userID uuid.UUID, limit, offset int, unr
 		`
 	} else {
 		query = `
-			SELECT a.id, a.feed_id, a.guid, a.title, a.url, a.content, a.summary, a.author,
+			SELECT a.id, a.feed_id, a.guid, a.title, a.url, a.content, a.summary, a.ai_summary, a.author,
 			       a.image_url, a.published_at, a.is_read, a.is_favorite, a.read_at, a.created_at,
 			       f.title as feed_title
 			FROM articles a
@@ -183,7 +185,7 @@ func (r *ArticleRepository) GetByGUID(feedID uuid.UUID, guid string) (*domain.Ar
 	ctx := context.Background()
 
 	query := `
-		SELECT a.id, a.feed_id, a.guid, a.title, a.url, a.content, a.summary, a.author,
+		SELECT a.id, a.feed_id, a.guid, a.title, a.url, a.content, a.summary, a.ai_summary, a.author,
 		       a.image_url, a.published_at, a.is_read, a.is_favorite, a.read_at, a.created_at,
 		       f.title as feed_title
 		FROM articles a
@@ -269,7 +271,7 @@ func (r *ArticleRepository) GetFavorites(userID uuid.UUID, limit, offset int) ([
 	ctx := context.Background()
 
 	query := `
-		SELECT a.id, a.feed_id, a.guid, a.title, a.url, a.content, a.summary, a.author,
+		SELECT a.id, a.feed_id, a.guid, a.title, a.url, a.content, a.summary, a.ai_summary, a.author,
 		       a.image_url, a.published_at, a.is_read, a.is_favorite, a.read_at, a.created_at,
 		       f.title as feed_title
 		FROM articles a
@@ -305,7 +307,7 @@ func (r *ArticleRepository) CountUnread(feedID uuid.UUID) (int, error) {
 // scanArticle scans a single article row.
 func (r *ArticleRepository) scanArticle(row pgx.Row) (*domain.Article, error) {
 	var article domain.Article
-	var url, content, summary, author, imageURL, feedTitle *string
+	var url, content, summary, aiSummary, author, imageURL, feedTitle *string
 	var publishedAt, readAt *time.Time
 
 	err := row.Scan(
@@ -316,6 +318,7 @@ func (r *ArticleRepository) scanArticle(row pgx.Row) (*domain.Article, error) {
 		&url,
 		&content,
 		&summary,
+		&aiSummary,
 		&author,
 		&imageURL,
 		&publishedAt,
@@ -339,6 +342,9 @@ func (r *ArticleRepository) scanArticle(row pgx.Row) (*domain.Article, error) {
 	if summary != nil {
 		article.Summary = *summary
 	}
+	if aiSummary != nil {
+		article.AISummary = *aiSummary
+	}
 	if author != nil {
 		article.Author = *author
 	}
@@ -359,7 +365,7 @@ func (r *ArticleRepository) scanArticles(rows pgx.Rows) ([]*domain.Article, erro
 	var articles []*domain.Article
 	for rows.Next() {
 		var article domain.Article
-		var url, content, summary, author, imageURL, feedTitle *string
+		var url, content, summary, aiSummary, author, imageURL, feedTitle *string
 		var publishedAt, readAt *time.Time
 
 		err := rows.Scan(
@@ -370,6 +376,7 @@ func (r *ArticleRepository) scanArticles(rows pgx.Rows) ([]*domain.Article, erro
 			&url,
 			&content,
 			&summary,
+			&aiSummary,
 			&author,
 			&imageURL,
 			&publishedAt,
@@ -393,6 +400,9 @@ func (r *ArticleRepository) scanArticles(rows pgx.Rows) ([]*domain.Article, erro
 		if summary != nil {
 			article.Summary = *summary
 		}
+		if aiSummary != nil {
+			article.AISummary = *aiSummary
+		}
 		if author != nil {
 			article.Author = *author
 		}
@@ -409,6 +419,123 @@ func (r *ArticleRepository) scanArticles(rows pgx.Rows) ([]*domain.Article, erro
 	}
 
 	return articles, nil
+}
+
+// Search performs a full-text search on articles for a specific user.
+func (r *ArticleRepository) Search(userID uuid.UUID, query string, limit, offset int) ([]*domain.Article, error) {
+	ctx := context.Background()
+
+	// Use plainto_tsquery or websearch_to_tsquery for natural language search
+	sql := `
+		SELECT a.id, a.feed_id, a.guid, a.title, a.url, a.content, a.summary, a.ai_summary, a.author,
+		       a.image_url, a.published_at, a.is_read, a.is_favorite, a.read_at, a.created_at,
+		       f.title as feed_title,
+		       ts_rank_cd(a.tsv, websearch_to_tsquery('french', $2)) as rank
+		FROM articles a
+		JOIN feeds f ON f.id = a.feed_id
+		WHERE f.user_id = $1 AND a.tsv @@ websearch_to_tsquery('french', $2)
+		ORDER BY rank DESC, a.published_at DESC
+		LIMIT $3 OFFSET $4
+	`
+
+	rows, err := r.pool.Query(ctx, sql, userID, query, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("searching articles: %w", err)
+	}
+	defer rows.Close()
+
+	return r.scanArticlesWithRank(rows)
+}
+
+// scanArticlesWithRank scans multiple article rows with their rank.
+func (r *ArticleRepository) scanArticlesWithRank(rows pgx.Rows) ([]*domain.Article, error) {
+	var articles []*domain.Article
+	for rows.Next() {
+		var article domain.Article
+		var url, content, summary, aiSummary, author, imageURL, feedTitle *string
+		var publishedAt, readAt *time.Time
+		var rank float32
+
+		err := rows.Scan(
+			&article.ID,
+			&article.FeedID,
+			&article.GUID,
+			&article.Title,
+			&url,
+			&content,
+			&summary,
+			&aiSummary,
+			&author,
+			&imageURL,
+			&publishedAt,
+			&article.IsRead,
+			&article.IsFavorite,
+			&readAt,
+			&article.CreatedAt,
+			&feedTitle,
+			&rank,
+		)
+
+		if err != nil {
+			return nil, fmt.Errorf("scanning article with rank: %w", err)
+		}
+
+		if url != nil {
+			article.URL = *url
+		}
+		if content != nil {
+			article.Content = *content
+		}
+		if summary != nil {
+			article.Summary = *summary
+		}
+		if aiSummary != nil {
+			article.AISummary = *aiSummary
+		}
+		if author != nil {
+			article.Author = *author
+		}
+		if imageURL != nil {
+			article.ImageURL = *imageURL
+		}
+		if feedTitle != nil {
+			article.FeedTitle = *feedTitle
+		}
+		article.PublishedAt = publishedAt
+		article.ReadAt = readAt
+
+		articles = append(articles, &article)
+	}
+
+	return articles, nil
+}
+
+// UpdateAISummary updates the AI-generated summary of an article.
+func (r *ArticleRepository) UpdateAISummary(id uuid.UUID, summary string) error {
+	ctx := context.Background()
+	query := `UPDATE articles SET ai_summary = $2 WHERE id = $1`
+	_, err := r.pool.Exec(ctx, query, id, summary)
+	if err != nil {
+		return fmt.Errorf("updating AI summary: %w", err)
+	}
+	return nil
+}
+
+// DeleteOldArticles removes articles older than the specified duration, except for favorites.
+func (r *ArticleRepository) DeleteOldArticles(ctx context.Context, olderThan time.Duration) (int64, error) {
+	threshold := time.Now().Add(-olderThan)
+
+	query := `
+		DELETE FROM articles 
+		WHERE created_at < $1 AND is_favorite = false
+	`
+
+	result, err := r.pool.Exec(ctx, query, threshold)
+	if err != nil {
+		return 0, fmt.Errorf("deleting old articles: %w", err)
+	}
+
+	return result.RowsAffected(), nil
 }
 
 // nullString returns nil if string is empty.

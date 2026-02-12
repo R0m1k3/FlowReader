@@ -17,6 +17,7 @@ export interface Article {
     url?: string;
     content?: string;
     summary?: string;
+    ai_summary?: string;
     author?: string;
     image_url?: string;
     published_at?: string;
@@ -101,6 +102,26 @@ export const articlesApi = {
 
     async markAllReadGlobal(): Promise<{ message: string }> {
         const response = await fetch(`${API_BASE}/articles/read-all`, {
+            method: 'POST',
+            credentials: 'include',
+        });
+        return handleResponse(response);
+    },
+
+    async search(query: string, limit: number = 50, offset: number = 0): Promise<Article[]> {
+        const params = new URLSearchParams();
+        params.append('q', query);
+        params.append('limit', limit.toString());
+        params.append('offset', offset.toString());
+
+        const response = await fetch(`${API_BASE}/articles/search?${params.toString()}`, {
+            credentials: 'include',
+        });
+        return handleResponse<Article[]>(response);
+    },
+
+    async summarize(id: string): Promise<{ summary: string }> {
+        const response = await fetch(`${API_BASE}/articles/${id}/summarize`, {
             method: 'POST',
             credentials: 'include',
         });

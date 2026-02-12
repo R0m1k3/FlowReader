@@ -46,6 +46,7 @@ func main() {
 	// Initialize services
 	authService := service.NewAuthService(userRepo, sessionRepo)
 	feedService := service.NewFeedService(feedRepo)
+	aiService := service.NewAIService()
 
 	// Initialize WS Hub
 	hub := ws.NewHub()
@@ -56,14 +57,18 @@ func main() {
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(authService)
 	feedHandler := handler.NewFeedHandler(feedService, fetchService, authService)
-	articleHandler := handler.NewArticleHandler(articleRepo, feedService, authService, hub)
+	articleHandler := handler.NewArticleHandler(articleRepo, feedService, authService, aiService, hub)
 	wsHandler := handler.NewWSHandler(hub, authService)
 	adminHandler := handler.NewAdminHandler(userRepo, authService)
 
-	// Start background feed fetcher
+	// Start background workers
 	fetcher := worker.NewFeedFetcher(fetchService, 15*time.Minute, 5)
 	fetcher.Start()
 	defer fetcher.Stop()
+
+	cleaner := worker.NewCleaner(articleRepo, 24*time.Hour)
+	cleaner.Start()
+	defer cleaner.Stop()
 
 	// Initialize router
 	r := chi.NewRouter()
@@ -122,12 +127,14 @@ func main() {
 		// Article routes
 		r.Route("/articles", func(r chi.Router) {
 			r.Get("/", articleHandler.List)
+			r.Get("/search", articleHandler.Search)
 			r.Post("/read-all", articleHandler.MarkAllReadGlobal)
 			r.Get("/favorites", articleHandler.GetFavorites)
 			r.Get("/{id}", articleHandler.Get)
 			r.Post("/{id}/read", articleHandler.MarkRead)
 			r.Delete("/{id}/read", articleHandler.MarkUnread)
 			r.Post("/{id}/favorite", articleHandler.ToggleFavorite)
+			r.Post("/{id}/summarize", articleHandler.Summarize)
 		})
 
 		// WebSocket route
