@@ -27,6 +27,8 @@ export function FocusCardStack({ articles, onMarkRead, onKeep, onToggleFavorite,
     const [exitX, setExitX] = useState(0);
     const isMobile = useIsMobile();
 
+    const [isProcessing, setIsProcessing] = useState(false);
+
     // Visible stack size
     const visibleArticles = articles.slice(currentIndex, currentIndex + 3);
     const topArticle = visibleArticles[0];
@@ -44,8 +46,31 @@ export function FocusCardStack({ articles, onMarkRead, onKeep, onToggleFavorite,
     const xSpring = useSpring(x, { stiffness: 1000, damping: 50 });
     const rotateSpring = useSpring(rotate, { stiffness: 1000, damping: 50 });
 
+    const handleAction = (action: 'read' | 'keep' | 'undo') => {
+        if (isProcessing) return;
+        setIsProcessing(true);
+
+        if (action === 'undo') {
+            if (currentIndex > 0) {
+                setCurrentIndex(prev => Math.max(0, prev - 1));
+                x.set(0);
+            }
+        } else if (action === 'read') {
+            onMarkRead(topArticle.id);
+            setCurrentIndex(prev => prev + 1);
+            x.set(0);
+        } else {
+            onKeep(topArticle.id);
+            setCurrentIndex(prev => prev + 1);
+            x.set(0);
+        }
+
+        // Lock for animation duration
+        setTimeout(() => setIsProcessing(false), 500);
+    };
+
     const bind = useDrag(({ active, movement: [mx], velocity: [vx] }) => {
-        if (readingArticle) return; // Disable drag when reading
+        if (readingArticle || isProcessing) return; // Disable drag when reading or processing
 
         const trigger = Math.abs(mx) > 200 || (Math.abs(vx) > 0.5 && Math.abs(mx) > 50);
 
@@ -54,20 +79,8 @@ export function FocusCardStack({ articles, onMarkRead, onKeep, onToggleFavorite,
             const isRight = mx > 0;
             setExitX(isRight ? 500 : -500); // Trigger exit animation
 
-            // Logic handled after animation completes via AnimatePresence onExitComplete
-            // But here we need to trigger state change. 
-            // Better approach: State change triggers exit animation naturally?
-            // No, libraries like Framer Motion handle exit animations when components are removed from DOM.
-            // So we just need to advance index.
-
-            if (isRight) {
-                onMarkRead(topArticle.id);
-            } else {
-                onKeep(topArticle.id);
-            }
-
-            setCurrentIndex(prev => prev + 1);
-            x.set(0); // Reset for next card
+            // Trigger action via handler
+            handleAction(isRight ? 'read' : 'keep');
         } else {
             // Dragging or Snap Back
             x.set(active ? mx : 0);
@@ -188,13 +201,11 @@ export function FocusCardStack({ articles, onMarkRead, onKeep, onToggleFavorite,
                 </AnimatePresence>
             </div>
 
-            <div className="absolute bottom-10 left-0 right-0 flex justify-center gap-8 z-20 items-center">
+            <div className="absolute bottom-10 left-0 right-0 flex justify-center items-center gap-4 px-4 sm:gap-8 z-20">
                 <button
-                    onClick={() => {
-                        onKeep(topArticle.id);
-                        setCurrentIndex(prev => prev + 1);
-                    }}
-                    className="p-4 rounded-full bg-white shadow-lg text-blue-500 hover:bg-blue-50 hover:scale-110 transition-all"
+                    onClick={() => handleAction('keep')}
+                    disabled={isProcessing}
+                    className="p-4 rounded-full bg-white shadow-lg text-blue-500 hover:bg-blue-50 hover:scale-110 transition-all disabled:opacity-50 disabled:scale-100"
                     title="Garder (Gauche)"
                 >
                     <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -204,13 +215,8 @@ export function FocusCardStack({ articles, onMarkRead, onKeep, onToggleFavorite,
 
                 {/* Undo Button - Always rendered for layout, hidden if inactive */}
                 <button
-                    onClick={() => {
-                        if (currentIndex > 0) {
-                            setCurrentIndex(prev => Math.max(0, prev - 1));
-                            x.set(0); // Reset position
-                        }
-                    }}
-                    disabled={currentIndex === 0}
+                    onClick={() => handleAction('undo')}
+                    disabled={currentIndex === 0 || isProcessing}
                     className={`p-3 rounded-full backdrop-blur-md text-white shadow-lg border border-white/20 transition-all duration-300 ${currentIndex > 0
                             ? 'bg-nature/80 hover:bg-nature hover:scale-105 opacity-100 cursor-pointer'
                             : 'bg-white/5 opacity-0 pointer-events-none scale-90'
@@ -223,11 +229,9 @@ export function FocusCardStack({ articles, onMarkRead, onKeep, onToggleFavorite,
                 </button>
 
                 <button
-                    onClick={() => {
-                        onMarkRead(topArticle.id);
-                        setCurrentIndex(prev => prev + 1);
-                    }}
-                    className="p-4 rounded-full bg-nature shadow-lg text-white hover:bg-nature-light hover:scale-110 transition-all"
+                    onClick={() => handleAction('read')}
+                    disabled={isProcessing}
+                    className="p-4 rounded-full bg-nature shadow-lg text-white hover:bg-nature-light hover:scale-110 transition-all disabled:opacity-50 disabled:scale-100"
                     title="J'ai lu (Droite)"
                 >
                     <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
