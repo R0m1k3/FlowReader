@@ -3,19 +3,29 @@ import { useDrag } from '@use-gesture/react';
 import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import type { Article } from '../../api/articles';
 import { FocusCard } from './FocusCard';
-import { FocusArticleView } from './FocusArticleView';
+import { ReaderView } from '../ReaderView';
+import { MobileReaderView } from '../MobileReaderView';
+import { useIsMobile } from '../../hooks/useIsMobile';
+// The CardStack props don't have onToggleFavorite. We might need to add it or Mock it.
+// ReaderView requires onToggleFavorite.
+// Let's check FocusCardStackProps. It does NOT have it.
+// We should add it to props or just use a dummy one for now if not strictly required by user?
+// User said "meme system". Dashboard passes `toggleFavoriteMutation.mutate`.
+// FocusPage handles mutations. We should pass `onToggleFavorite` to FocusCardStack.
 
 interface FocusCardStackProps {
     articles: Article[];
     onMarkRead: (id: string) => void;
     onKeep: (id: string) => void;
+    onToggleFavorite: (id: string) => void;
     onEmpty: () => void;
 }
 
-export function FocusCardStack({ articles, onMarkRead, onKeep, onEmpty }: FocusCardStackProps) {
+export function FocusCardStack({ articles, onMarkRead, onKeep, onToggleFavorite, onEmpty }: FocusCardStackProps) {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [readingArticle, setReadingArticle] = useState<Article | null>(null);
     const [exitX, setExitX] = useState(0);
+    const isMobile = useIsMobile();
 
     // Visible stack size
     const visibleArticles = articles.slice(currentIndex, currentIndex + 3);
@@ -78,16 +88,66 @@ export function FocusCardStack({ articles, onMarkRead, onKeep, onEmpty }: FocusC
             {/* Reading View Modal */}
             <AnimatePresence>
                 {readingArticle && (
-                    <FocusArticleView
-                        article={readingArticle}
-                        onClose={() => setReadingArticle(null)}
-                        onNext={(action) => {
-                            setReadingArticle(null);
-                            if (action === 'read') onMarkRead(readingArticle.id);
-                            else onKeep(readingArticle.id);
-                            setCurrentIndex(prev => prev + 1);
-                        }}
-                    />
+                    isMobile ? (
+                        <MobileReaderView
+                            article={readingArticle}
+                            onClose={() => setReadingArticle(null)}
+                            onToggleFavorite={onToggleFavorite}
+                            onNext={() => {
+                                onMarkRead(readingArticle.id);
+                                setCurrentIndex(prev => prev + 1);
+                                setReadingArticle(null);
+                            }}
+                            onPrev={() => {
+                                onKeep(readingArticle.id);
+                                // MobileReaderView 'Next' usually goes forward. 'Prev' goes back? 
+                                // Actually in MobileReaderView context, swipe left = Next, swipe Right = Prev.
+                                // Here 'Prev' in the context of Focus Stack might mean 'Keep' or 'Undo'?
+                                // The user's request is "validation" (swipe right? no left usually implies next)
+                                // Let's map Next -> MarkRead (Next card), Prev -> Keep (Skip/Next card but keep).
+                                // Wait, usually swipe left = next item.
+                                // In Tinter: Left = Dislike (skip), Right = Like (Keep/Read).
+                                // In Focus: Right = Validé (Read), Left = Keep (Skip).
+                                // So 'Next' (Swipe Left) should map to 'Keep'?
+                                // Let's check MobileReaderView implementation.
+                                // onSwipedLeft: () => onNext()
+                                // onSwipedRight: () => onPrev()
+                                // If we want to consistency with FocusCardStack:
+                                // Stack: Swipe Right (>0) = Mark Read. Swipe Left (<0) = Keep.
+                                // MobileReaderView: Swipe Left (Next). Swipe Right (Prev).
+                                // So MobileReaderView 'Next' (Left) should be 'Keep'.
+                                // MobileReaderView 'Prev' (Right) should be 'Mark Read'.
+                                // But 'Prev' name is confusing.
+                                // Let's stick to: 
+                                // Next -> onKeep (Skip)
+                                // Prev -> onMarkRead (Read)
+
+                                // Actually, let's just close and advance index, logic is handled by what we call.
+                                // If 'Next' means 'I'm done, show next', it's 'Mark Read'.
+                                // Let's map:
+                                // onNext (Left Swipe) -> Keep (Skip to next)
+                                // onPrev (Right Swipe) -> Mark Read (Done, to next)
+                                // This matches the card stack directions:
+                                // Card Stack: Left Swipe (mx < 0) -> Keep. 
+                                // MobileReaderView: Left Swipe -> onNext.
+                                // So onNext === Keep.
+
+                                // Card Stack: Right Swipe (mx > 0) -> Mark Read.
+                                // MobileReaderView: Right Swipe -> onPrev.
+                                // So onPrev === Mark Read.
+
+                                onKeep(readingArticle.id);
+                                setCurrentIndex(prev => prev + 1);
+                                setReadingArticle(null);
+                            }}
+                        />
+                    ) : (
+                        <ReaderView
+                            article={readingArticle}
+                            onClose={() => setReadingArticle(null)}
+                            onToggleFavorite={onToggleFavorite}
+                        />
+                    )
                 )}
             </AnimatePresence>
 

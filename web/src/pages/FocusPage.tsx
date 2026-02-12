@@ -39,8 +39,21 @@ export function FocusPage({ onExit }: FocusPageProps) {
         },
     });
 
+    // Mutation to toggle favorite
+    const toggleFavoriteMutation = useMutation({
+        mutationFn: (id: string) => articlesApi.toggleFavorite(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['articles'] });
+            queryClient.invalidateQueries({ queryKey: ['feeds'] });
+        },
+    });
+
     const handleMarkRead = (id: string) => {
         markReadMutation.mutate(id);
+    };
+
+    const handleToggleFavorite = (id: string) => {
+        toggleFavoriteMutation.mutate(id);
     };
 
     const handleKeep = (id: string) => {
@@ -96,6 +109,7 @@ export function FocusPage({ onExit }: FocusPageProps) {
                     articles={deck}
                     onMarkRead={handleMarkRead}
                     onKeep={handleKeep}
+                    onToggleFavorite={handleToggleFavorite}
                     onEmpty={() => setIsComplete(true)}
                 />
             </main>
