@@ -202,21 +202,25 @@ export function FocusCardStack({ articles, onMarkRead, onKeep, onToggleFavorite,
                     </svg>
                 </button>
 
-                {/* Undo Button */}
-                {currentIndex > 0 && (
-                    <button
-                        onClick={() => {
+                {/* Undo Button - Always rendered for layout, hidden if inactive */}
+                <button
+                    onClick={() => {
+                        if (currentIndex > 0) {
                             setCurrentIndex(prev => Math.max(0, prev - 1));
                             x.set(0); // Reset position
-                        }}
-                        className="p-3 rounded-full bg-white/10 backdrop-blur-md text-white hover:bg-white/20 hover:scale-105 transition-all border border-white/20"
-                        title="Revenir en arrière"
-                    >
-                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                        </svg>
-                    </button>
-                )}
+                        }
+                    }}
+                    disabled={currentIndex === 0}
+                    className={`p-3 rounded-full backdrop-blur-md text-white shadow-lg border border-white/20 transition-all duration-300 ${currentIndex > 0
+                            ? 'bg-nature/80 hover:bg-nature hover:scale-105 opacity-100 cursor-pointer'
+                            : 'bg-white/5 opacity-0 pointer-events-none scale-90'
+                        }`}
+                    title="Revenir en arrière"
+                >
+                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                    </svg>
+                </button>
 
                 <button
                     onClick={() => {
