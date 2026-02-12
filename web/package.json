@@ -41,6 +41,7 @@
     "vite-plugin-pwa": "^1.2.0"
   },
   "optionalDependencies": {
-    "@rollup/rollup-linux-x64-musl": "^4.2.0"
+    "@rollup/rollup-linux-x64-musl": "^4.2.0",
+    "lightningcss-linux-x64-musl": "^1.27.0"
   }
 }
