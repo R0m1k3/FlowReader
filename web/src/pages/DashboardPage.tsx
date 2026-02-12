@@ -241,34 +241,34 @@ export function DashboardPage({ selectedFeedId, onEnterFocus }: DashboardPagePro
                     </div>
                 </header>
 
-                {/* Focus Mode CTA Widget */}
+                {/* Focus Mode CTA Widget - Compact Version */}
                 {!selectedFeedId && articles && articles.length > 0 && (
-                    <div className="mb-16 relative overflow-hidden rounded-2xl bg-gradient-to-r from-nature to-nature-light shadow-2xl items-center flex flex-col md:flex-row p-8 md:p-12 hover:scale-[1.01] transition-transform cursor-pointer group" onClick={onEnterFocus}>
+                    <div className="mb-12 relative overflow-hidden rounded-xl bg-gradient-to-r from-nature to-nature-light shadow-xl items-center flex flex-col md:flex-row p-6 hover:scale-[1.01] transition-transform cursor-pointer group" onClick={onEnterFocus}>
                         {/* decorative circles */}
-                        <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-colors pointer-events-none"></div>
-                        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-black/10 rounded-full blur-3xl pointer-events-none"></div>
+                        <div className="absolute -top-12 -right-12 w-48 h-48 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-colors pointer-events-none"></div>
+                        <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-black/10 rounded-full blur-2xl pointer-events-none"></div>
 
-                        <div className="flex-1 z-10 text-center md:text-left mb-6 md:mb-0">
-                            <div className="flex items-center justify-center md:justify-start space-x-2 mb-2">
-                                <span className="bg-white/20 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-widest backdrop-blur-sm">
+                        <div className="flex-1 z-10 text-center md:text-left mb-4 md:mb-0">
+                            <div className="flex items-center justify-center md:justify-start space-x-2 mb-1">
+                                <span className="bg-white/20 text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-widest backdrop-blur-sm">
                                     Nouveauté
                                 </span>
                             </div>
-                            <h2 className="text-3xl md:text-4xl font-serif italic text-white mb-2 text-shadow-sm">
+                            <h2 className="text-2xl font-serif italic text-white mb-1 text-shadow-sm">
                                 Votre session de lecture
                             </h2>
-                            <p className="text-white/80 font-medium text-sm md:text-base max-w-xl">
-                                {articles.filter(a => !a.is_read).length} articles non lus vous attendent. Passez en mode Focus pour une lecture fluide et sans distraction.
+                            <p className="text-white/80 font-medium text-xs max-w-lg">
+                                {articles.filter(a => !a.is_read).length} articles non lus. Passez en mode Focus.
                             </p>
                         </div>
 
                         <div className="z-10">
                             <button
                                 onClick={(e) => { e.stopPropagation(); onEnterFocus(); }}
-                                className="bg-white text-nature font-bold text-sm uppercase tracking-widest px-8 py-4 rounded-full shadow-lg hover:bg-gray-50 hover:shadow-xl hover:scale-105 transition-all flex items-center"
+                                className="bg-white text-nature font-bold text-xs uppercase tracking-widest px-6 py-3 rounded-full shadow-lg hover:bg-gray-50 hover:shadow-xl hover:scale-105 transition-all flex items-center"
                             >
                                 Lancer le Mode Focus
-                                <svg className="w-5 h-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                                 </svg>
                             </button>
