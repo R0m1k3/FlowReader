@@ -1,6 +1,5 @@
-import { ReaderViewProps } from './ReaderView'; // Self-reference import seems wrong, removing.
+import { useState } from 'react';
 import { ShareButton } from './ShareButton';
-// No need to import ReaderViewProps if we define it here, but let's keep clean.
 import { type Article, articlesApi } from '../api/articles';
 
 interface ReaderViewProps {

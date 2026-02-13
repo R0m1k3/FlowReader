@@ -35,7 +35,7 @@ export function ShareButton({ article, className = "" }: ShareButtonProps) {
     };
 
     const copyToClipboard = () => {
-        navigator.clipboard.writeText(article.url);
+        navigator.clipboard.writeText(article.url || window.location.href);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
         setIsOpen(false);
