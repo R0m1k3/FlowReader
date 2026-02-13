@@ -3,7 +3,7 @@
 > **Le calme dans le chaos de l'information.**
 > Un agrégateur RSS minimaliste, intelligent et économe, conçu pour ceux qui veulent reprendre le contrôle de leur veille.
 
-![FlowReader Dashboard](docs/dashboard.png)
+![FlowReader Dashboard](https://placehold.co/800x450/1e1e1e/FFF?text=Aperçu+Dashboard)
 
 [![Go Version](https://img.shields.io/badge/Go-1.24-00ADD8?style=flat-square&logo=go)](https://golang.org/)
 [![React Version](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react)](https://react.dev/)
@@ -22,7 +22,7 @@ Une interface immersive inspirée des applications de rencontre pour trier vos f
 - **Swipe à gauche :** Article gardé pour plus tard.
 - **Double-clic :** Lecture immédiate.
 
-![Mode Focus](docs/focus.png)
+![Mode Focus](https://placehold.co/800x450/1e1e1e/22C55E?text=Mode+Focus)
 
 ### 🧠 Smart Digest (IA)
 
@@ -32,7 +32,7 @@ Ne perdez plus de temps sur les articles "clickbait".
 - Il génère un **résumé concis** directement accessible depuis votre liste de lecture.
 - Identifiez en un coup d'œil si un article mérite votre temps.
 
-![Smart Digest](docs/digest.png)
+![Smart Digest](https://placehold.co/800x450/1e1e1e/22C55E?text=Smart+Digest+IA)
 
 ### ⚡ Performance & Sobriété
 
