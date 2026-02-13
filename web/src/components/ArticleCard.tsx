@@ -37,8 +37,8 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
         },
         onSwiped: () => resetSwipe(),
         trackMouse: true,
-        preventScrollOnSwipe: true,
-        delta: 10,
+        preventScrollOnSwipe: false,
+        delta: 50,
     });
 
     const resetSwipe = () => {

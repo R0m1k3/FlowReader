@@ -89,10 +89,10 @@ export function FocusPage({ onExit }: FocusPageProps) {
                 </div>
                 <button
                     onClick={onExit}
-                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-nature/10 text-nature shadow-lg hover:bg-nature hover:text-white hover:border-nature hover:scale-105 transition-all duration-300 group"
+                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-nature/10 text-nature-dark shadow-lg hover:bg-nature hover:text-white hover:border-nature hover:scale-105 transition-all duration-300 group"
                     title="Quitter le mode Focus"
                 >
-                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity hidden sm:inline-block">
+                    <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:inline-block">
                         Retour au Dashboard
                     </span>
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

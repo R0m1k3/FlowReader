@@ -24,7 +24,7 @@ interface FocusCardStackProps {
 export function FocusCardStack({ articles, onMarkRead, onKeep, onToggleFavorite, onEmpty }: FocusCardStackProps) {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [readingArticle, setReadingArticle] = useState<Article | null>(null);
-    const [exitX, setExitX] = useState(0);
+    // const [exitX, setExitX] = useState(0); // Removed per simplification
     const isMobile = useIsMobile();
 
     const [isProcessing, setIsProcessing] = useState(false);
@@ -84,7 +84,7 @@ export function FocusCardStack({ articles, onMarkRead, onKeep, onToggleFavorite,
         if (!active && trigger) {
             // Swipe Validé
             const isRight = mx > 0;
-            setExitX(isRight ? 500 : -500); // Trigger exit animation
+            // setExitX(isRight ? 500 : -500); // Trigger exit animation - Removed lateral movement per user request
 
             // Trigger action via handler
             handleAction(isRight ? 'read' : 'keep');
@@ -208,7 +208,7 @@ export function FocusCardStack({ articles, onMarkRead, onKeep, onToggleFavorite,
                                     }
                                 }}
                                 animate={{ scale: 1 - i * 0.05, y: i * 20 }}
-                                exit={{ x: exitX, opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
+                                exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
                             >
                                 <FocusCard article={article} isTop={isTop} />
                             </motion.div>
