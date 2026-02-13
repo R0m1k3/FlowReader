@@ -11,9 +11,9 @@ export function ShareButton({ article, className = "" }: ShareButtonProps) {
     const [copied, setCopied] = useState(false);
 
     const shareData = {
-        title: article.title,
-        text: article.summary ? article.summary.substring(0, 100) + '...' : article.title,
-        url: article.url,
+        title: article.title || 'Article FlowReader',
+        text: article.summary ? article.summary.substring(0, 100) + '...' : (article.title || ''),
+        url: article.url || window.location.href,
     };
 
     const handleShare = async () => {
@@ -65,7 +65,7 @@ export function ShareButton({ article, className = "" }: ShareButtonProps) {
                     <div className="absolute right-0 bottom-12 mt-2 w-48 bg-white dark:bg-carbon border border-gray-200 dark:border-white/10 rounded-xl shadow-xl z-50 overflow-hidden text-sm animate-in fade-in zoom-in-95 duration-200 origin-bottom-right">
                         <div className="py-1">
                             <button
-                                onClick={() => openLink(`https://wa.me/?text=${encodeURIComponent(article.title + ' ' + article.url)}`)}
+                                onClick={() => openLink(`https://wa.me/?text=${encodeURIComponent((article.title || '') + ' ' + (article.url || ''))}`)}
                                 className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-white/5 flex items-center gap-3 text-gray-700 dark:text-gray-200"
                             >
                                 <span className="text-green-500">
@@ -74,7 +74,7 @@ export function ShareButton({ article, className = "" }: ShareButtonProps) {
                                 WhatsApp
                             </button>
                             <button
-                                onClick={() => openLink(`mailto:?subject=${encodeURIComponent(article.title)}&body=${encodeURIComponent(article.url)}`)}
+                                onClick={() => openLink(`mailto:?subject=${encodeURIComponent(article.title || '')}&body=${encodeURIComponent(article.url || '')}`)}
                                 className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-white/5 flex items-center gap-3 text-gray-700 dark:text-gray-200"
                             >
                                 <span className="text-gray-500">
@@ -83,7 +83,7 @@ export function ShareButton({ article, className = "" }: ShareButtonProps) {
                                 Email
                             </button>
                             <button
-                                onClick={() => openLink(`https://twitter.com/intent/tweet?text=${encodeURIComponent(article.title)}&url=${encodeURIComponent(article.url)}`)}
+                                onClick={() => openLink(`https://twitter.com/intent/tweet?text=${encodeURIComponent(article.title || '')}&url=${encodeURIComponent(article.url || '')}`)}
                                 className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-white/5 flex items-center gap-3 text-gray-700 dark:text-gray-200"
                             >
                                 <span className="text-blue-400">
@@ -92,7 +92,7 @@ export function ShareButton({ article, className = "" }: ShareButtonProps) {
                                 X / Twitter
                             </button>
                             <button
-                                onClick={() => openLink(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(article.url)}`)}
+                                onClick={() => openLink(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(article.url || '')}`)}
                                 className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-white/5 flex items-center gap-3 text-gray-700 dark:text-gray-200"
                             >
                                 <span className="text-blue-700">

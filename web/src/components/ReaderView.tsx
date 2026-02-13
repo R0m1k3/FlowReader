@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { ReaderViewProps } from './ReaderView'; // Self-reference import seems wrong, removing.
+import { ShareButton } from './ShareButton';
+// No need to import ReaderViewProps if we define it here, but let's keep clean.
 import { type Article, articlesApi } from '../api/articles';
 
 interface ReaderViewProps {
@@ -113,6 +115,7 @@ export function ReaderView({ article, onClose, onToggleFavorite }: ReaderViewPro
 
                     <div className="flex items-center justify-between py-8 border-y border-white/5 mb-16">
                         <div className="flex items-center space-x-6">
+                            <ShareButton article={article} />
                             <button
                                 onClick={() => onToggleFavorite(article.id)}
                                 className={`flex items-center space-x-3 px-6 py-2.5 rounded-full border transition-all duration-500 ${article.is_favorite

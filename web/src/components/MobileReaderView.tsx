@@ -1,5 +1,6 @@
 import type { Article } from '../api/articles';
 import { useSwipeable } from 'react-swipeable';
+import { ShareButton } from './ShareButton';
 
 interface MobileReaderViewProps {
     article: Article;
@@ -71,6 +72,7 @@ export function MobileReaderView({ article, onClose, onToggleFavorite, onNext, o
 
                     {/* Mobile Action Bar */}
                     <div className="flex items-center justify-between py-6 border-y border-white/5 mb-8">
+                        <ShareButton article={article} />
                         <button
                             onClick={() => onToggleFavorite(article.id)}
                             className={`flex items-center space-x-3 px-4 py-2 rounded-full border transition-all duration-300 ${article.is_favorite
