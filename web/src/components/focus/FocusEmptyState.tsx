@@ -21,7 +21,7 @@ export function FocusEmptyState({ onBack }: FocusEmptyStateProps) {
 
             <button
                 onClick={onBack}
-                className="px-8 py-3 rounded-full bg-nature text-white font-bold text-sm uppercase tracking-widest hover:bg-nature-light hover:scale-105 transition-all shadow-xl shadow-nature/20"
+                className="px-8 py-3 rounded-full bg-nature text-white font-bold text-sm uppercase tracking-widest border border-nature shadow-lg shadow-nature/20 hover:bg-nature-light hover:scale-105 hover:shadow-xl transition-all duration-300"
             >
                 Retour au Dashboard
             </button>

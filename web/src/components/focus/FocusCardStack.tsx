@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useDrag } from '@use-gesture/react';
 import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import type { Article } from '../../api/articles';
@@ -28,6 +28,8 @@ export function FocusCardStack({ articles, onMarkRead, onKeep, onToggleFavorite,
     const isMobile = useIsMobile();
 
     const [isProcessing, setIsProcessing] = useState(false);
+    // Track whether a drag gesture occurred to prevent double-click from firing after swipe
+    const hasDraggedRef = useRef(false);
 
     // Visible stack size
     const visibleArticles = articles.slice(currentIndex, currentIndex + 3);
@@ -72,6 +74,11 @@ export function FocusCardStack({ articles, onMarkRead, onKeep, onToggleFavorite,
     const bind = useDrag(({ active, movement: [mx], velocity: [vx] }) => {
         if (readingArticle || isProcessing) return; // Disable drag when reading or processing
 
+        // Mark as dragged if the user moved more than a few pixels
+        if (active && Math.abs(mx) > 5) {
+            hasDraggedRef.current = true;
+        }
+
         const trigger = Math.abs(mx) > 200 || (Math.abs(vx) > 0.5 && Math.abs(mx) > 50);
 
         if (!active && trigger) {
@@ -81,9 +88,13 @@ export function FocusCardStack({ articles, onMarkRead, onKeep, onToggleFavorite,
 
             // Trigger action via handler
             handleAction(isRight ? 'read' : 'keep');
+        } else if (!active) {
+            // Snap Back — reset drag flag after a short delay so double-click can distinguish
+            x.set(0);
+            setTimeout(() => { hasDraggedRef.current = false; }, 50);
         } else {
-            // Dragging or Snap Back
-            x.set(active ? mx : 0);
+            // Actively dragging
+            x.set(mx);
         }
     });
 
@@ -190,7 +201,12 @@ export function FocusCardStack({ articles, onMarkRead, onKeep, onToggleFavorite,
                                     cursor: isTop ? 'grab' : 'default',
                                 }}
                                 {...(isTop ? (bind() as any) : {})}
-                                onClick={() => isTop && setReadingArticle(article)}
+                                onDoubleClick={() => {
+                                    // Only open on genuine double-click, not after a drag gesture
+                                    if (isTop && !hasDraggedRef.current) {
+                                        setReadingArticle(article);
+                                    }
+                                }}
                                 animate={{ scale: 1 - i * 0.05, y: i * 20 }}
                                 exit={{ x: exitX, opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
                             >
@@ -202,10 +218,11 @@ export function FocusCardStack({ articles, onMarkRead, onKeep, onToggleFavorite,
             </div>
 
             <div className="absolute bottom-10 left-0 right-0 flex justify-center items-center gap-4 px-4 sm:gap-8 z-20">
+                {/* Garder — Outlined style matching Dashboard "Actualiser" button */}
                 <button
                     onClick={() => handleAction('keep')}
                     disabled={isProcessing}
-                    className="p-4 rounded-full bg-white shadow-lg text-blue-500 hover:bg-blue-50 hover:scale-110 transition-all disabled:opacity-50 disabled:scale-100"
+                    className="p-4 rounded-full bg-white border border-nature/10 text-nature shadow-lg hover:bg-nature hover:text-white hover:border-nature hover:scale-110 transition-all duration-300 disabled:opacity-50 disabled:scale-100"
                     title="Garder (Gauche)"
                 >
                     <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -213,13 +230,13 @@ export function FocusCardStack({ articles, onMarkRead, onKeep, onToggleFavorite,
                     </svg>
                 </button>
 
-                {/* Undo Button - Always rendered for layout, hidden if inactive */}
+                {/* Undo — Subtle outlined, invisible when unavailable */}
                 <button
                     onClick={() => handleAction('undo')}
                     disabled={currentIndex === 0 || isProcessing}
-                    className={`p-3 rounded-full backdrop-blur-md text-white shadow-lg border border-white/20 transition-all duration-300 ${currentIndex > 0
-                            ? 'bg-nature/80 hover:bg-nature hover:scale-105 opacity-100 cursor-pointer'
-                            : 'bg-white/5 opacity-0 pointer-events-none scale-90'
+                    className={`p-3 rounded-full border shadow-lg transition-all duration-300 ${currentIndex > 0
+                        ? 'bg-white border-nature/10 text-nature hover:bg-nature hover:text-white hover:border-nature hover:scale-105 opacity-100 cursor-pointer'
+                        : 'bg-white/5 border-transparent text-transparent opacity-0 pointer-events-none scale-90'
                         }`}
                     title="Revenir en arrière"
                 >
@@ -228,10 +245,11 @@ export function FocusCardStack({ articles, onMarkRead, onKeep, onToggleFavorite,
                     </svg>
                 </button>
 
+                {/* J'ai lu — Primary filled, matching "Lancer le Mode Focus" CTA */}
                 <button
                     onClick={() => handleAction('read')}
                     disabled={isProcessing}
-                    className="p-4 rounded-full bg-nature shadow-lg text-white hover:bg-nature-light hover:scale-110 transition-all disabled:opacity-50 disabled:scale-100"
+                    className="p-4 rounded-full bg-nature text-white border border-nature shadow-lg shadow-nature/20 hover:bg-nature-light hover:scale-110 hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:scale-100"
                     title="J'ai lu (Droite)"
                 >
                     <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">

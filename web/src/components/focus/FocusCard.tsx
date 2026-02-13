@@ -73,7 +73,7 @@ export function FocusCard({ article, isTop = false }: FocusCardProps) {
                 {/* Hint (only on top card) */}
                 {isTop && (
                     <div className="mt-auto pt-4 text-center opacity-40 text-[10px] uppercase tracking-widest font-bold text-paper-muted animate-pulse">
-                        Cliquer pour lire • Glisser pour trier
+                        Double-cliquer pour lire • Glisser pour trier
                     </div>
                 )}
             </div>
