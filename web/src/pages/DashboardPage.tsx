@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import Masonry from 'react-masonry-css';
 import { articlesApi } from '../api/articles';
 import { feedsApi } from '../api/feeds';
 import { ArticleCard } from '../components/ArticleCard';
@@ -7,6 +8,12 @@ import { ReaderView } from '../components/ReaderView';
 import { MobileReaderView } from '../components/MobileReaderView';
 import { useWebsocket } from '../hooks/useWebsocket';
 import type { Article } from '../api/articles';
+
+const breakpointColumnsObj = {
+    default: 3,
+    1100: 2,
+    700: 1
+};
 
 interface DashboardPageProps {
     selectedFeedId: string | null;
@@ -279,9 +286,13 @@ export function DashboardPage({ selectedFeedId, onEnterFocus }: DashboardPagePro
                 {/* Grid */}
                 {articles.length > 0 ? (
                     <>
-                        <div className="magazine-grid">
+                        <Masonry
+                            breakpointCols={breakpointColumnsObj}
+                            className="flex w-auto -ml-6"
+                            columnClassName="pl-6 bg-clip-padding"
+                        >
                             {articles.map((article, index) => (
-                                <div key={`${article.id}-${index}`} className={index % 6 === 0 ? 'md:col-span-2' : ''}>
+                                <div key={`${article.id}-${index}`} className="mb-6">
                                     <ArticleCard
                                         article={article}
                                         onClick={(article) => {
@@ -295,7 +306,7 @@ export function DashboardPage({ selectedFeedId, onEnterFocus }: DashboardPagePro
                                     />
                                 </div>
                             ))}
-                        </div>
+                        </Masonry>
 
                         {/* Infinite Scroll Sentinel */}
                         <div ref={loadMoreRef} className="mt-20 py-10 flex flex-col items-center justify-center space-y-4">

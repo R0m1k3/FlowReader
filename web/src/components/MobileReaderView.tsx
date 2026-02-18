@@ -66,7 +66,7 @@ export function MobileReaderView({ article, onClose, onToggleFavorite, onNext, o
                     </header>
 
                     <div
-                        className="magazine-content text-paper-white/90 text-lg font-reading leading-relaxed space-y-6 selection:bg-nature/20 break-words overflow-x-hidden mb-12"
+                        className="magazine-content text-paper-white/90 text-xl font-reading leading-loose space-y-6 selection:bg-nature/20 break-words overflow-x-hidden mb-12"
                         dangerouslySetInnerHTML={{ __html: displayContent }}
                     />
 

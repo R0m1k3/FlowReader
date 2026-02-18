@@ -28,7 +28,7 @@ export function ReaderView({ article, onClose, onToggleFavorite }: ReaderViewPro
             onClick={onClose}
         >
             <div
-                className="w-full max-w-4xl bg-carbon-light h-fit min-h-[50vh] my-12 shadow-[0_0_100px_rgba(0,0,0,0.8)] relative animate-in slide-in-from-bottom duration-700 rounded-3xl border border-white/5"
+                className="w-full max-w-4xl bg-carbon-light/95 h-fit min-h-[50vh] my-0 md:my-12 shadow-2xl relative animate-in slide-in-from-bottom duration-700 md:rounded-3xl border border-white/5 backdrop-blur-sm"
                 onClick={(e) => e.stopPropagation()}
             >
 
@@ -108,7 +108,7 @@ export function ReaderView({ article, onClose, onToggleFavorite }: ReaderViewPro
                     </header>
 
                     <div
-                        className="magazine-content text-paper-white/90 text-xl font-reading leading-relaxed space-y-8 selection:bg-nature/20 break-words overflow-x-hidden mb-12"
+                        className="magazine-content max-w-2xl mx-auto text-paper-white/90 text-xl font-reading leading-loose space-y-8 selection:bg-nature/20 break-words overflow-x-hidden mb-12"
                         dangerouslySetInnerHTML={{ __html: displayContent }}
                     />
 
