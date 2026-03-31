@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Masonry from 'react-masonry-css';
 import { articlesApi } from '../api/articles';
@@ -86,6 +86,18 @@ export function DashboardPage({ selectedFeedId, onEnterFocus }: DashboardPagePro
     });
 
     const articles = data?.pages.flat() || [];
+    const sortedArticles = useMemo(() => {
+        return [...articles].sort((a, b) => {
+            // First, sort by read status: unread (false) first
+            if (a.is_read !== b.is_read) {
+                return a.is_read ? 1 : -1;
+            }
+            // If same read status, sort by date descending
+            const dateA = a.published_at || a.created_at;
+            const dateB = b.published_at || b.created_at;
+            return new Date(dateB) - new Date(dateA);
+        });
+    }, [articles]);
 
     // Intersection Observer for Infinite Scroll
     useEffect(() => {
@@ -249,7 +261,7 @@ export function DashboardPage({ selectedFeedId, onEnterFocus }: DashboardPagePro
                 </header>
 
                 {/* Focus Mode CTA Widget - Compact Version */}
-                {!selectedFeedId && articles && articles.length > 0 && (
+                {!selectedFeedId && sortedArticles && sortedArticles.length > 0 && (
                     <div className="mb-12 relative overflow-hidden rounded-xl bg-gradient-to-r from-nature to-nature-light shadow-xl items-center flex flex-col md:flex-row p-6 hover:scale-[1.01] transition-transform cursor-pointer group" onClick={onEnterFocus}>
                         {/* decorative circles */}
                         <div className="absolute -top-12 -right-12 w-48 h-48 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-colors pointer-events-none"></div>
@@ -265,7 +277,7 @@ export function DashboardPage({ selectedFeedId, onEnterFocus }: DashboardPagePro
                                 Votre session de lecture
                             </h2>
                             <p className="text-white/80 font-medium text-xs max-w-lg">
-                                {articles.filter(a => !a.is_read).length} articles non lus. Passez en mode Focus.
+                                {sortedArticles.filter(a => !a.is_read).length} articles non lus. Passez en mode Focus.
                             </p>
                         </div>
 
@@ -284,14 +296,14 @@ export function DashboardPage({ selectedFeedId, onEnterFocus }: DashboardPagePro
                 )}
 
                 {/* Grid */}
-                {articles.length > 0 ? (
+                {sortedArticles.length > 0 ? (
                     <>
                         <Masonry
                             breakpointCols={breakpointColumnsObj}
                             className="flex w-auto -ml-6"
                             columnClassName="pl-6 bg-clip-padding"
                         >
-                            {articles.map((article, index) => (
+                            {sortedArticles.map((article, index) => (
                                 <div key={`${article.id}-${index}`} className="mb-6">
                                     <ArticleCard
                                         article={article}
@@ -345,10 +357,10 @@ export function DashboardPage({ selectedFeedId, onEnterFocus }: DashboardPagePro
                         onClose={() => setSelectedArticle(null)}
                         onToggleFavorite={(id) => toggleFavoriteMutation.mutate(id)}
                         onNext={() => {
-                            if (!articles) return;
-                            const idx = articles.findIndex(a => a.id === selectedArticle.id);
-                            if (idx < articles.length - 1) {
-                                const nextArticle = articles[idx + 1];
+                            if (!sortedArticles) return;
+                            const idx = sortedArticles.findIndex(a => a.id === selectedArticle.id);
+                            if (idx < sortedArticles.length - 1) {
+                                const nextArticle = sortedArticles[idx + 1];
                                 setSelectedArticle(nextArticle);
                                 if (!nextArticle.is_read) {
                                     toggleReadMutation.mutate({ id: nextArticle.id, is_read: true });
@@ -360,10 +372,10 @@ export function DashboardPage({ selectedFeedId, onEnterFocus }: DashboardPagePro
                             }
                         }}
                         onPrev={() => {
-                            if (!articles) return;
-                            const idx = articles.findIndex(a => a.id === selectedArticle.id);
+                            if (!sortedArticles) return;
+                            const idx = sortedArticles.findIndex(a => a.id === selectedArticle.id);
                             if (idx > 0) {
-                                const prevArticle = articles[idx - 1];
+                                const prevArticle = sortedArticles[idx - 1];
                                 setSelectedArticle(prevArticle);
                             }
                         }}
