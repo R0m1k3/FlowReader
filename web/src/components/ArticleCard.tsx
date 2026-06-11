@@ -103,11 +103,14 @@ export function ArticleCard({ article, onClick, onToggleRead, onToggleFavorite }
                     </span>
 
                     {!article.is_read && (
-                        <span
-                            className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full bg-nature ring-4 ring-nature/20"
-                            title="Non lu"
+                        <div
+                            className="absolute top-0 right-0 w-24 h-24 overflow-hidden pointer-events-none z-20"
                             aria-label="Article non lu"
-                        />
+                        >
+                            <span className="absolute top-[18px] -right-[34px] w-[140px] rotate-45 bg-nature text-white text-[10px] font-extrabold uppercase tracking-[0.2em] text-center py-1.5 shadow-lg shadow-black/20 border-b border-white/10">
+                                Nouveau
+                            </span>
+                        </div>
                     )}
                 </div>
 
