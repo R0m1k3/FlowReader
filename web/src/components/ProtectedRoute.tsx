@@ -6,9 +6,9 @@ export function ProtectedRoute() {
 
     if (isLoading) {
         return (
-            <div className="loading-screen">
-                <div className="spinner"></div>
-                <p>Chargement...</p>
+            <div className="min-h-screen flex flex-col items-center justify-center gap-5 bg-carbon">
+                <div className="w-11 h-11 border-2 border-nature/20 border-t-nature rounded-full animate-spin" />
+                <p className="eyebrow text-paper-muted">Chargement…</p>
             </div>
         );
     }

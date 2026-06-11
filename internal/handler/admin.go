@@ -42,6 +42,15 @@ func (h *AdminHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Prevent an admin from deleting their own account (lockout / accidental
+	// self-removal). The AdminOnly middleware has already verified admin rights.
+	if cookie, cErr := r.Cookie("session_id"); cErr == nil {
+		if current, _ := h.authService.GetUserByToken(cookie.Value); current != nil && current.ID == userID {
+			respondError(w, http.StatusForbidden, "You cannot delete your own account")
+			return
+		}
+	}
+
 	// Logic to delete user and all associated data
 	if err := h.userRepo.Delete(userID); err != nil {
 		respondError(w, http.StatusInternalServerError, "Failed to delete user")

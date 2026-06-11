@@ -4,16 +4,49 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"net/url"
+	"os"
+	"strings"
 	"sync"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
+// allowedWSOrigins holds optional extra origins (comma-separated) from the
+// WS_ALLOWED_ORIGINS env var, for deployments where the WS host differs.
+var allowedWSOrigins = parseAllowedOrigins(os.Getenv("WS_ALLOWED_ORIGINS"))
+
+func parseAllowedOrigins(raw string) map[string]bool {
+	out := make(map[string]bool)
+	for _, o := range strings.Split(raw, ",") {
+		if o = strings.TrimSpace(strings.ToLower(o)); o != "" {
+			out[o] = true
+		}
+	}
+	return out
+}
+
+// checkOrigin enforces a same-origin policy to prevent Cross-Site WebSocket
+// Hijacking (CSWSH). Requests without an Origin header (non-browser clients)
+// are allowed; browser requests must match the Host or an allow-listed origin.
+func checkOrigin(r *http.Request) bool {
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		return true // non-browser client (e.g. native app, curl)
+	}
+	u, err := url.Parse(origin)
+	if err != nil {
+		return false
+	}
+	if strings.EqualFold(u.Host, r.Host) {
+		return true
+	}
+	return allowedWSOrigins[strings.ToLower(u.Host)]
+}
+
 var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true // In production, check origin properly
-	},
+	CheckOrigin: checkOrigin,
 }
 
 // Event represents a websocket event.

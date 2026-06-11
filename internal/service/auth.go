@@ -71,9 +71,11 @@ type LoginRequest struct {
 	IPAddress string `json:"-"`
 }
 
-// LoginResponse contains the session token.
+// LoginResponse contains the session result. The token itself is intentionally
+// NOT serialized to JSON: it is delivered only via the HttpOnly session cookie
+// so it remains inaccessible to client-side scripts.
 type LoginResponse struct {
-	Token     string    `json:"token"`
+	Token     string    `json:"-"`
 	ExpiresAt time.Time `json:"expires_at"`
 	User      UserInfo  `json:"user"`
 }

@@ -17,7 +17,7 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-    token: string;
+    // The session token is delivered via an HttpOnly cookie, not the JSON body.
     expires_at: string;
     user: User;
 }

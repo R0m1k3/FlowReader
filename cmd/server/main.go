@@ -80,6 +80,17 @@ func main() {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Timeout(30 * time.Second))
 
+	// Baseline security headers (defense in depth).
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			w.Header().Set("X-Content-Type-Options", "nosniff")
+			w.Header().Set("X-Frame-Options", "DENY")
+			w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+			w.Header().Set("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
+			next.ServeHTTP(w, req)
+		})
+	})
+
 	// Health check endpoint
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		if err := pool.Ping(r.Context()); err != nil {
@@ -98,8 +109,9 @@ func main() {
 			w.Write([]byte(`{"message":"FlowReader API v1"}`))
 		})
 
-		// Auth routes (public)
+		// Auth routes (public) — rate-limited to mitigate brute-force attacks.
 		r.Route("/auth", func(r chi.Router) {
+			r.Use(handler.NewAuthRateLimiter())
 			r.Post("/register", authHandler.Register)
 			r.Post("/login", authHandler.Login)
 			r.Post("/logout", authHandler.Logout)

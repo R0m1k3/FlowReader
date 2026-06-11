@@ -1,16 +1,21 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
 import { authApi } from '../api/auth';
 import { ApiError } from '../api/client';
 import { useAuthStore } from '../stores/authStore';
+import { AuthShell } from '../components/AuthShell';
 
 export function LoginPage() {
     const navigate = useNavigate();
+    const location = useLocation();
     const setUser = useAuthStore((state) => state.setUser);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+
+    const flashMessage = (location.state as { message?: string } | null)?.message;
 
     const loginMutation = useMutation({
         mutationFn: authApi.login,
@@ -19,11 +24,7 @@ export function LoginPage() {
             navigate('/');
         },
         onError: (err: Error) => {
-            if (err instanceof ApiError) {
-                setError(err.message);
-            } else {
-                setError('Échec de la connexion. Veuillez réessayer.');
-            }
+            setError(err instanceof ApiError ? err.message : 'Échec de la connexion. Veuillez réessayer.');
         },
     });
 
@@ -34,70 +35,64 @@ export function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen bg-carbon flex items-center justify-center p-6">
-            <div className="w-full max-w-md bg-carbon-light p-10 rounded-xl shadow-2xl border border-carbon-dark/50 animate-in fade-in zoom-in duration-500">
-                <div className="text-center mb-10">
-                    <h1 className="text-gold text-4xl font-serif mb-2 italic tracking-tight">FlowReader</h1>
-                    <p className="text-paper-muted text-[10px] uppercase tracking-[0.3em] font-bold">Magazine Personnel</p>
+        <AuthShell eyebrow="Magazine personnel" title="Bon retour" subtitle="Reprenez votre veille là où vous l'avez laissée.">
+            <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+                {flashMessage && !error && (
+                    <p className="text-nature text-xs bg-nature/10 border border-nature/20 rounded-xl p-3" role="status">
+                        {flashMessage}
+                    </p>
+                )}
+                {error && (
+                    <p className="text-danger text-xs bg-danger/10 border border-danger/30 rounded-xl p-3 animate-shake" role="alert">
+                        {error}
+                    </p>
+                )}
+
+                <div className="space-y-2">
+                    <label htmlFor="email" className="block eyebrow text-paper-muted">Email</label>
+                    <input
+                        id="email"
+                        type="email"
+                        autoComplete="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="input-field"
+                        placeholder="vous@exemple.com"
+                        required
+                        autoFocus
+                    />
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    {error && (
-                        <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-xs p-3 rounded-md animate-shake">
-                            {error}
-                        </div>
-                    )}
+                <div className="space-y-2">
+                    <label htmlFor="password" className="block eyebrow text-paper-muted">Mot de passe</label>
+                    <input
+                        id="password"
+                        type="password"
+                        autoComplete="current-password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="input-field"
+                        placeholder="••••••••"
+                        required
+                    />
+                </div>
 
-                    <div className="space-y-2">
-                        <label htmlFor="email" className="block text-paper-muted text-[10px] uppercase tracking-widest font-bold">
-                            Email
-                        </label>
-                        <input
-                            id="email"
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="w-full bg-carbon border border-carbon-dark text-paper-white px-4 py-3 rounded-md focus:border-gold focus:ring-1 focus:ring-gold outline-none transition-all placeholder:text-carbon-light"
-                            placeholder="vous@exemple.com"
-                            required
-                            autoFocus
-                        />
-                    </div>
+                <motion.button
+                    type="submit"
+                    disabled={loginMutation.isPending}
+                    whileTap={{ scale: 0.98 }}
+                    className="btn-primary w-full py-4 text-xs"
+                >
+                    {loginMutation.isPending ? 'Authentification…' : 'Continuer'}
+                </motion.button>
+            </form>
 
-                    <div className="space-y-2">
-                        <label htmlFor="password" title="password" className="block text-paper-muted text-[10px] uppercase tracking-widest font-bold">
-                            Mot de passe
-                        </label>
-                        <input
-                            id="password"
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="w-full bg-carbon border border-carbon-dark text-paper-white px-4 py-3 rounded-md focus:border-gold focus:ring-1 focus:ring-gold outline-none transition-all placeholder:text-carbon-light"
-                            placeholder="••••••••"
-                            required
-                        />
-                    </div>
-
-                    <button
-                        type="submit"
-                        disabled={loginMutation.isPending}
-                        className="w-full btn-primary py-4 text-xs uppercase tracking-[0.2em] font-bold mt-4 disabled:opacity-50 disabled:cursor-not-wait"
-                    >
-                        {loginMutation.isPending ? 'Authentification...' : 'Continuer'}
-                    </button>
-                </form>
-
-                <p className="mt-8 text-center text-paper-muted text-xs">
-                    Nouveau chez FlowReader ?{' '}
-                    <button
-                        className="text-gold hover:underline font-bold tracking-wide"
-                        onClick={() => navigate('/register')}
-                    >
-                        Créer un compte
-                    </button>
-                </p>
-            </div>
-        </div>
+            <p className="mt-8 text-center text-paper-muted text-sm">
+                Nouveau chez FlowReader ?{' '}
+                <button onClick={() => navigate('/register')} className="text-nature font-bold hover:underline underline-offset-4">
+                    Créer un compte
+                </button>
+            </p>
+        </AuthShell>
     );
 }

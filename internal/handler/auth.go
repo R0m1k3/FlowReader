@@ -4,10 +4,28 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/michael/flowreader/internal/service"
 )
+
+// secureCookie reports whether the session cookie should carry the Secure flag.
+// It honours TLS termination at a reverse proxy (X-Forwarded-Proto) and an
+// explicit COOKIE_SECURE override, so HTTPS deployments behind a proxy still
+// get Secure cookies even though r.TLS is nil.
+func secureCookie(r *http.Request) bool {
+	switch strings.ToLower(os.Getenv("COOKIE_SECURE")) {
+	case "true", "1", "yes":
+		return true
+	case "false", "0", "no":
+		return false
+	}
+	if r.TLS != nil {
+		return true
+	}
+	return strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
+}
 
 // AuthHandler handles authentication-related HTTP requests.
 type AuthHandler struct {
@@ -74,7 +92,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		Expires:  resp.ExpiresAt,
 		HttpOnly: true,
-		Secure:   r.TLS != nil, // Secure only if HTTPS
+		Secure:   secureCookie(r),
 		SameSite: http.SameSiteStrictMode,
 	})
 
@@ -98,7 +116,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		MaxAge:   -1,
 		HttpOnly: true,
-		Secure:   r.TLS != nil,
+		Secure:   secureCookie(r),
 		SameSite: http.SameSiteStrictMode,
 	})
 
