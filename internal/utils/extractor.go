@@ -18,9 +18,8 @@ type ContentExtractor struct {
 // NewContentExtractor creates a new extractor instance.
 func NewContentExtractor() *ContentExtractor {
 	return &ContentExtractor{
-		client: &http.Client{
-			Timeout: 10 * time.Second,
-		},
+		// SSRF-hardened client: refuses to connect to private/internal addresses.
+		client: SafeHTTPClient(10 * time.Second),
 	}
 }
 
@@ -28,6 +27,11 @@ func NewContentExtractor() *ContentExtractor {
 func (e *ContentExtractor) Extract(ctx context.Context, url string) (string, error) {
 	if url == "" {
 		return "", fmt.Errorf("empty URL")
+	}
+
+	// Validate up-front (scheme + non-private host) before issuing the request.
+	if _, err := ValidateExternalURL(url); err != nil {
+		return "", err
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)

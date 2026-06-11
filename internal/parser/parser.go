@@ -12,6 +12,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/google/uuid"
 	"github.com/michael/flowreader/internal/domain"
+	"github.com/michael/flowreader/internal/utils"
 	"github.com/mmcdole/gofeed"
 )
 
@@ -23,12 +24,9 @@ type FeedParser struct {
 
 // NewFeedParser creates a new feed parser.
 func NewFeedParser() *FeedParser {
-	client := &http.Client{
-		Timeout: 30 * time.Second,
-	}
-
 	return &FeedParser{
-		client: client,
+		// SSRF-hardened client: refuses to connect to private/internal addresses.
+		client: utils.SafeHTTPClient(30 * time.Second),
 		parser: gofeed.NewParser(),
 	}
 }
@@ -44,6 +42,11 @@ type ParsedFeed struct {
 
 // Parse fetches and parses a feed URL.
 func (p *FeedParser) Parse(ctx context.Context, feedURL string, feedID uuid.UUID) (*ParsedFeed, error) {
+	// Validate up-front (scheme + non-private host) before issuing the request.
+	if _, err := utils.ValidateExternalURL(feedURL); err != nil {
+		return nil, err
+	}
+
 	// Create request with context
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, feedURL, nil)
 	if err != nil {

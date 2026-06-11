@@ -37,6 +37,28 @@ func NewArticleHandler(articleRepo domain.ArticleRepository, feedService *servic
 	}
 }
 
+// sanitizeArticle cleans the user-facing HTML fields of a single article to
+// prevent stored XSS from malicious feeds. AISummary is rendered as plain text
+// by the client, so only Content and Summary need sanitization.
+func (h *ArticleHandler) sanitizeArticle(a *domain.Article) {
+	if a == nil {
+		return
+	}
+	if a.Content != "" {
+		a.Content = h.sanitizer.Sanitize(a.Content)
+	}
+	if a.Summary != "" {
+		a.Summary = h.sanitizer.Sanitize(a.Summary)
+	}
+}
+
+// sanitizeArticles cleans a slice of articles in place.
+func (h *ArticleHandler) sanitizeArticles(articles []*domain.Article) {
+	for _, a := range articles {
+		h.sanitizeArticle(a)
+	}
+}
+
 // getUserFromRequest extracts the authenticated user from the request.
 func (h *ArticleHandler) getUserFromRequest(r *http.Request) (uuid.UUID, error) {
 	cookie, err := r.Cookie("session_id")
@@ -79,6 +101,7 @@ func (h *ArticleHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.sanitizeArticles(articles)
 	respondJSON(w, http.StatusOK, articles)
 }
 
@@ -120,6 +143,7 @@ func (h *ArticleHandler) ListByFeed(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.sanitizeArticles(articles)
 	respondJSON(w, http.StatusOK, articles)
 }
 
@@ -150,12 +174,8 @@ func (h *ArticleHandler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Sanitize content
-	if article.Content != "" {
-		article.Content = h.sanitizer.Sanitize(article.Content)
-	} else if article.Summary != "" {
-		article.Summary = h.sanitizer.Sanitize(article.Summary)
-	}
+	// Sanitize user-facing HTML content (defense against stored XSS).
+	h.sanitizeArticle(article)
 
 	respondJSON(w, http.StatusOK, article)
 }
@@ -358,6 +378,7 @@ func (h *ArticleHandler) GetFavorites(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.sanitizeArticles(articles)
 	respondJSON(w, http.StatusOK, articles)
 }
 
@@ -391,6 +412,7 @@ func (h *ArticleHandler) Search(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.sanitizeArticles(articles)
 	respondJSON(w, http.StatusOK, articles)
 }
 
