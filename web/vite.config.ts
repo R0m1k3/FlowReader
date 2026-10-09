@@ -67,15 +67,9 @@ export default defineConfig({
               cacheableResponse: { statuses: [200] },
             },
           },
-          {
-            urlPattern: ({ request }) => request.destination === 'image',
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'images',
-              expiration: { maxEntries: 400, maxAgeSeconds: 60 * 60 * 24 * 30, purgeOnQuotaError: true },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
+          // No image route: feed images are cross-origin, and a fetch() from
+          // the worker is bound by the CSP's connect-src 'self', so it would
+          // fail every cover. The browser's HTTP cache handles them instead.
           {
             urlPattern: ({ request }) => request.destination === 'font',
             handler: 'CacheFirst',

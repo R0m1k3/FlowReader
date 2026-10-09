@@ -224,7 +224,7 @@ export function DashboardPage({ selectedFeedId, hidden }: DashboardPageProps) {
 
     return (
         <main ref={mainRef} className={`flex-1 overflow-y-auto bg-carbon relative ${hidden ? 'hidden' : ''}`} aria-busy={isFetching}>
-            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 md:px-12 py-6 md:py-8">
+            <div className="max-w-[2400px] mx-auto px-4 sm:px-6 md:px-12 py-6 md:py-8">
                 {/* The page title is the feed selector in the top bar. */}
                 <div className="mb-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
                     <p className="text-paper-muted text-sm" aria-live="polite">
@@ -284,7 +284,7 @@ export function DashboardPage({ selectedFeedId, hidden }: DashboardPageProps) {
 
                 {/* Grid */}
                 {isPending ? (
-                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3" aria-label="Chargement des articles" role="status">
+                    <div className="article-grid" aria-label="Chargement des articles" role="status">
                         {Array.from({ length: 6 }, (_, i) => (
                             <div key={i} className="rounded-2xl bg-carbon-light border border-paper-muted/10 overflow-hidden">
                                 <div className="aspect-[16/9] bg-carbon-dark animate-pulse" />
@@ -306,7 +306,7 @@ export function DashboardPage({ selectedFeedId, hidden }: DashboardPageProps) {
                 ) : articles.length > 0 ? (
                     <>
                         <div
-                            className={`grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 transition-opacity ${isPlaceholderData ? 'opacity-60' : ''}`}
+                            className={`article-grid transition-opacity ${isPlaceholderData ? 'opacity-60' : ''}`}
                         >
                             {articles.map((article, i) => (
                                 <ArticleCard

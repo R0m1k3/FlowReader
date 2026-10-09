@@ -15,9 +15,10 @@ interface ArticleCardProps {
 
 /** Initial-letter cover used when a feed provides no image (no third-party fallback). */
 function CoverFallback({ title, feed }: { title: string; feed?: string }) {
+    const initial = (feed || title).trim().charAt(0).toUpperCase();
     return (
-        <div className="w-full h-full bg-gradient-to-br from-nature/90 to-nature-dark flex items-end p-5">
-            <span className="font-serif italic text-on-nature/90 text-lg leading-snug line-clamp-3">{feed || title}</span>
+        <div className="w-full h-full bg-nature/12 flex items-center justify-center" aria-hidden="true">
+            <span className="font-serif italic text-nature/45 text-7xl leading-none select-none">{initial}</span>
         </div>
     );
 }
@@ -25,6 +26,7 @@ function CoverFallback({ title, feed }: { title: string; feed?: string }) {
 function ArticleCardImpl({ article, index, isCurrent, onOpen, onToggleRead, onToggleFavorite }: ArticleCardProps) {
     const [offset, setOffset] = useState(0);
     const [imgFailed, setImgFailed] = useState(false);
+    const [imgLoaded, setImgLoaded] = useState(false);
 
     // Touch-only swipe: right = read/unread, left = favorite. Mouse drags (text
     // selection) never trigger it.
@@ -80,12 +82,15 @@ function ArticleCardImpl({ article, index, isCurrent, onOpen, onToggleRead, onTo
                             referrerPolicy="no-referrer"
                             width={640}
                             height={360}
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                            className={`w-full h-full object-cover transition-[transform,opacity] duration-700 group-hover:scale-[1.03] ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
+                            onLoad={() => setImgLoaded(true)}
                             onError={() => setImgFailed(true)}
                         />
                     ) : (
                         <CoverFallback title={article.title} feed={article.feed_title} />
                     )}
+                    {/* Light bottom shade: gives the cover depth and lifts the feed chip. */}
+                    <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/30 to-transparent pointer-events-none" aria-hidden="true" />
                     <span className="absolute bottom-3 left-3 chip bg-carbon-light/95 shadow-sm max-w-[75%] truncate">
                         {article.feed_title || 'Journal'}
                     </span>

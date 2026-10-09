@@ -113,6 +113,13 @@
   text-wrap: pretty;
 }
 
+/* Article grid: as many ~20rem columns as the width allows. */
+@utility article-grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+}
+
 /* Skip rendering work for off-screen cards in long lists. */
 @utility cv-auto {
   content-visibility: auto;
