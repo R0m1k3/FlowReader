@@ -1,130 +1,92 @@
-import { API_BASE, handleResponse } from './client';
+import { apiFetch } from './client';
 
-export class ApiError extends Error {
-    public status: number;
-    constructor(status: number, message: string) {
-        super(message);
-        this.status = status;
-        this.name = 'ApiError';
-    }
-}
+export { ApiError } from './client';
 
+/** List item: light payload (no HTML content). */
 export interface Article {
     id: string;
     feed_id: string;
-    guid: string;
     title: string;
     url?: string;
-    content?: string;
-    summary?: string;
+    excerpt?: string;
     ai_summary?: string;
     author?: string;
     image_url?: string;
     published_at?: string;
+    sort_at: string;
     is_read: boolean;
     is_favorite: boolean;
     read_at?: string;
     created_at: string;
+    word_count: number;
+    reading_time: number;
     feed_title?: string;
+}
+
+/** Full article returned by GET /articles/{id}. HTML is sanitized server-side. */
+export interface ArticleDetail extends Article {
+    content?: string;
+    summary?: string;
 }
 
 export interface ListArticlesOptions {
     limit?: number;
-    offset?: number;
+    cursor?: string;
     unread?: boolean;
-    favorite?: boolean;
-    feed_id?: string;
+    favorites?: boolean;
+    feedId?: string | null;
+}
+
+/** Keyset cursor for the page following `last`. */
+export function cursorAfter(last: Article): string {
+    return `${last.sort_at},${last.id}`;
 }
 
 export const articlesApi = {
-    async list(options: ListArticlesOptions = {}): Promise<Article[]> {
+    list(options: ListArticlesOptions = {}): Promise<Article[]> {
         const params = new URLSearchParams();
-        if (options.limit) params.append('limit', options.limit.toString());
-        if (options.offset) params.append('offset', options.offset.toString());
-        if (options.unread) params.append('unread', 'true');
-        if (options.favorite) params.append('favorite', 'true');
+        if (options.limit) params.set('limit', String(options.limit));
+        if (options.cursor) params.set('cursor', options.cursor);
+        if (options.unread) params.set('unread', 'true');
 
-        let url = `${API_BASE}/articles`;
-        if (options.favorite) {
-            url = `${API_BASE}/articles/favorites`;
-        } else if (options.feed_id) {
-            url = `${API_BASE}/feeds/${options.feed_id}/articles`;
-        }
+        let path = '/articles';
+        if (options.favorites) path = '/articles/favorites';
+        else if (options.feedId) path = `/feeds/${options.feedId}/articles`;
 
-        if (params.toString()) {
-            url += `?${params.toString()}`;
-        }
-
-        const response = await fetch(url, {
-            credentials: 'include',
-        });
-        return handleResponse<Article[]>(response);
+        const qs = params.toString();
+        return apiFetch<Article[]>(qs ? `${path}?${qs}` : path);
     },
 
-    async get(id: string): Promise<Article> {
-        const response = await fetch(`${API_BASE}/articles/${id}`, {
-            credentials: 'include',
-        });
-        return handleResponse<Article>(response);
+    get(id: string): Promise<ArticleDetail> {
+        return apiFetch<ArticleDetail>(`/articles/${id}`);
     },
 
-    async markRead(id: string): Promise<{ is_read: boolean }> {
-        const response = await fetch(`${API_BASE}/articles/${id}/read`, {
-            method: 'POST',
-            credentials: 'include',
-        });
-        return handleResponse(response);
+    markRead(id: string): Promise<{ is_read: boolean }> {
+        return apiFetch(`/articles/${id}/read`, { method: 'POST' });
     },
 
-    async markUnread(id: string): Promise<{ is_read: boolean }> {
-        const response = await fetch(`${API_BASE}/articles/${id}/read`, {
-            method: 'DELETE',
-            credentials: 'include',
-        });
-        return handleResponse(response);
+    markUnread(id: string): Promise<{ is_read: boolean }> {
+        return apiFetch(`/articles/${id}/read`, { method: 'DELETE' });
     },
 
-    async toggleFavorite(id: string): Promise<{ is_favorite: boolean }> {
-        const response = await fetch(`${API_BASE}/articles/${id}/favorite`, {
-            method: 'POST',
-            credentials: 'include',
-        });
-        return handleResponse(response);
+    toggleFavorite(id: string): Promise<{ is_favorite: boolean }> {
+        return apiFetch(`/articles/${id}/favorite`, { method: 'POST' });
     },
 
-    async markAllRead(feedId: string): Promise<{ message: string }> {
-        const response = await fetch(`${API_BASE}/feeds/${feedId}/read-all`, {
-            method: 'POST',
-            credentials: 'include',
-        });
-        return handleResponse(response);
+    markAllRead(feedId: string): Promise<{ message: string; count: number }> {
+        return apiFetch(`/feeds/${feedId}/read-all`, { method: 'POST' });
     },
 
-    async markAllReadGlobal(): Promise<{ message: string }> {
-        const response = await fetch(`${API_BASE}/articles/read-all`, {
-            method: 'POST',
-            credentials: 'include',
-        });
-        return handleResponse(response);
+    markAllReadGlobal(): Promise<{ message: string; count: number }> {
+        return apiFetch('/articles/read-all', { method: 'POST' });
     },
 
-    async search(query: string, limit: number = 50, offset: number = 0): Promise<Article[]> {
-        const params = new URLSearchParams();
-        params.append('q', query);
-        params.append('limit', limit.toString());
-        params.append('offset', offset.toString());
-
-        const response = await fetch(`${API_BASE}/articles/search?${params.toString()}`, {
-            credentials: 'include',
-        });
-        return handleResponse<Article[]>(response);
+    search(query: string, limit = 30, offset = 0): Promise<Article[]> {
+        const params = new URLSearchParams({ q: query, limit: String(limit), offset: String(offset) });
+        return apiFetch<Article[]>(`/articles/search?${params}`);
     },
 
-    async summarize(id: string): Promise<{ summary: string }> {
-        const response = await fetch(`${API_BASE}/articles/${id}/summarize`, {
-            method: 'POST',
-            credentials: 'include',
-        });
-        return handleResponse(response);
+    summarize(id: string): Promise<{ summary: string }> {
+        return apiFetch(`/articles/${id}/summarize`, { method: 'POST' });
     },
 };

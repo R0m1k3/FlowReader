@@ -17,7 +17,7 @@ export function MobileTopBar({ onSelectFeed, selectedFeedId, onEnterFocus }: Mob
 
     return (
         <>
-            <header className="md:hidden sticky top-0 z-30 bg-carbon-light/85 backdrop-blur-xl border-b border-paper-muted/12 px-4 py-3">
+            <header className="md:hidden sticky top-0 z-30 bg-carbon-light/95 border-b border-paper-muted/12 px-4 py-2.5" style={{ paddingTop: 'max(0.625rem, env(safe-area-inset-top))' }}>
                 <div className="flex items-center justify-between gap-3">
                     <button onClick={() => onSelectFeed(null)} className="text-nature text-xl font-serif italic shrink-0">
                         FlowReader
@@ -38,28 +38,30 @@ export function MobileTopBar({ onSelectFeed, selectedFeedId, onEnterFocus }: Mob
                 </div>
 
                 {/* Feed selector chips */}
-                <div className="flex gap-2 mt-3 overflow-x-auto pb-1 -mx-1 px-1 no-scrollbar">
+                <nav className="flex gap-2 mt-2.5 overflow-x-auto pb-1 -mx-1 px-1 no-scrollbar" aria-label="Flux">
                     {[
-                        { id: null as string | null, label: 'Tous' },
-                        { id: 'favorites' as string | null, label: 'Favoris' },
-                        ...(feeds ?? []).map((f) => ({ id: f.id as string | null, label: f.title })),
+                        { id: null as string | null, label: 'Tous', unread: 0 },
+                        { id: 'favorites' as string | null, label: 'Favoris', unread: 0 },
+                        ...(feeds ?? []).map((f) => ({ id: f.id as string | null, label: f.title, unread: f.unread_count ?? 0 })),
                     ].map((item) => (
                         <button
                             key={item.id ?? 'all'}
                             onClick={() => onSelectFeed(item.id)}
-                            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                            aria-current={selectedFeedId === item.id ? 'page' : undefined}
+                            className={`shrink-0 min-h-10 px-3.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
                                 selectedFeedId === item.id
-                                    ? 'bg-nature text-white'
-                                    : 'bg-nature/8 text-paper-muted hover:text-nature'
+                                    ? 'bg-nature text-on-nature'
+                                    : 'bg-nature/10 text-paper-muted hover:text-nature'
                             }`}
                         >
                             {item.label}
+                            {item.unread ? <span className="ml-1.5 opacity-80">{item.unread}</span> : null}
                         </button>
                     ))}
-                </div>
+                </nav>
             </header>
 
-            <AddFeedModal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} />
+            {isAddOpen && <AddFeedModal onClose={() => setIsAddOpen(false)} />}
         </>
     );
 }

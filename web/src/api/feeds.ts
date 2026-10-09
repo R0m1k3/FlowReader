@@ -1,4 +1,4 @@
-import { API_BASE, handleResponse } from './client';
+import { API_BASE, handleResponse, apiFetch } from './client';
 
 export interface Feed {
     id: string;
@@ -20,11 +20,8 @@ export interface AddFeedRequest {
 }
 
 export const feedsApi = {
-    async list(): Promise<Feed[]> {
-        const response = await fetch(`${API_BASE}/feeds`, {
-            credentials: 'include',
-        });
-        return handleResponse<Feed[]>(response);
+    list(): Promise<Feed[]> {
+        return apiFetch<Feed[]>('/feeds');
     },
 
     async add(data: AddFeedRequest): Promise<Feed> {
@@ -62,12 +59,8 @@ export const feedsApi = {
         await handleResponse(response);
     },
 
-    async refresh(): Promise<{ message: string }> {
-        const response = await fetch(`${API_BASE}/feeds/refresh`, {
-            method: 'POST',
-            credentials: 'include',
-        });
-        return handleResponse(response);
+    refresh(): Promise<{ message: string }> {
+        return apiFetch('/feeds/refresh', { method: 'POST' });
     },
 
     async importOPML(file: File): Promise<{ imported: number; skipped: number; errors?: string[] }> {
