@@ -144,7 +144,7 @@ export function FocusCardStack({ articles, onEmpty, onExit }: FocusCardStackProp
         <div className="relative w-full h-full flex flex-col items-center justify-center gap-6">
             <p className="sr-only" aria-live="polite">{announce}</p>
 
-            <span className="inline-block bg-nature-dark/80 px-4 py-2 rounded-full text-white text-[11px] uppercase font-bold tracking-widest">
+            <span className="inline-block bg-nature-dark/80 px-4 py-2 rounded-full text-white text-xs font-semibold">
                 {articles.length - currentIndex} restant{articles.length - currentIndex > 1 ? 's' : ''}
             </span>
 

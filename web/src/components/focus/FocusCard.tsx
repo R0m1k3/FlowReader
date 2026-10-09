@@ -24,19 +24,19 @@ export function FocusCard({ article, isTop = false }: FocusCardProps) {
                         onError={(e) => (e.currentTarget.style.display = 'none')}
                     />
                 ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-nature to-nature-dark p-8 flex items-end">
-                        <span className="text-2xl font-serif italic text-on-nature/95 leading-tight line-clamp-3">{article.feed_title}</span>
+                    <div className="w-full h-full bg-nature/12 p-8 flex items-end">
+                        <span className="text-2xl font-serif italic text-nature leading-tight line-clamp-3">{article.feed_title}</span>
                     </div>
                 )}
-                <span className="absolute top-4 right-4 bg-black/55 text-white text-[11px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full">
+                <span className="absolute top-4 right-4 bg-black/55 text-white text-xs font-semibold px-3 py-1.5 rounded-full">
                     {readingTimeLabel(article.reading_time)}
                 </span>
             </div>
 
             {/* Body */}
             <div className="flex-1 p-5 sm:p-6 flex flex-col min-h-0">
-                <div className="flex items-center justify-between gap-3 mb-3 text-[11px] uppercase tracking-widest font-bold text-paper-muted">
-                    <span className="flex items-center gap-2 text-nature truncate">
+                <div className="flex items-center justify-between gap-3 mb-3 text-xs text-paper-muted">
+                    <span className="flex items-center gap-2 text-nature font-semibold truncate">
                         <span className="w-1.5 h-1.5 rounded-full bg-nature shrink-0" aria-hidden="true" />
                         <span className="truncate">{article.feed_title || 'Journal'}</span>
                     </span>
@@ -54,7 +54,7 @@ export function FocusCard({ article, isTop = false }: FocusCardProps) {
                 )}
 
                 {isTop && (
-                    <p className="mt-auto pt-3 text-center text-[11px] uppercase tracking-widest font-bold text-paper-muted hidden sm:block">
+                    <p className="mt-auto pt-3 text-center text-xs text-paper-muted hidden sm:block">
                         ← Garder · Lu → · Entrée pour lire
                     </p>
                 )}

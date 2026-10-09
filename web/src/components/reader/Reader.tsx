@@ -255,7 +255,7 @@ export function Reader({ article: listArticle, next, hasPrev, onClose, onNext, o
                         <div className="flex-1 min-w-0 text-sm">
                             <p className="font-semibold text-nature truncate">{listArticle.feed_title || 'Article'}</p>
                             <p className="text-paper-muted truncate">
-                                <time dateTime={date}>{formatLong(date)}</time>, {readingTimeLabel(listArticle.reading_time)} de lecture
+                                <time dateTime={date}>{formatLong(date)}</time> · {readingTimeLabel(listArticle.reading_time)}<span className="hidden sm:inline"> de lecture</span>
                             </p>
                         </div>
                         <button

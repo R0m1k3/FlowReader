@@ -38,7 +38,7 @@ export function AuthShell({ eyebrow, title, subtitle, children }: AuthShellProps
                     transition={{ duration: 0.7, delay: 0.1 }}
                     className="relative z-10 space-y-6"
                 >
-                    <h2 className="text-5xl font-serif italic leading-[1.1] text-balance">
+                    <h2 className="text-5xl font-serif italic leading-[1.1] text-balance text-white">
                         Le calme dans le chaos de l'information.
                     </h2>
                     <p className="text-white/70 font-reading text-lg max-w-sm leading-relaxed">
@@ -46,7 +46,7 @@ export function AuthShell({ eyebrow, title, subtitle, children }: AuthShellProps
                     </p>
                 </motion.div>
 
-                <p className="relative z-10 text-white/40 text-[10px] uppercase tracking-[0.4em] font-bold">
+                <p className="relative z-10 text-white/50 text-xs">
                     FlowReader · Édition 2026
                 </p>
             </aside>

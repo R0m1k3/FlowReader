@@ -17,8 +17,8 @@ interface ArticleCardProps {
 function CoverFallback({ title, feed }: { title: string; feed?: string }) {
     const initial = (feed || title).trim().charAt(0).toUpperCase();
     return (
-        <div className="w-full h-full bg-gradient-to-br from-nature/90 to-nature-dark flex items-center justify-center" aria-hidden="true">
-            <span className="font-serif italic text-on-nature/35 text-7xl leading-none select-none">{initial}</span>
+        <div className="w-full h-full bg-nature/12 flex items-center justify-center" aria-hidden="true">
+            <span className="font-serif italic text-nature/45 text-7xl leading-none select-none">{initial}</span>
         </div>
     );
 }
