@@ -44,11 +44,9 @@ func (h *AdminHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	// Prevent an admin from deleting their own account (lockout / accidental
 	// self-removal). The AdminOnly middleware has already verified admin rights.
-	if cookie, cErr := r.Cookie("session_id"); cErr == nil {
-		if current, _ := h.authService.GetUserByToken(cookie.Value); current != nil && current.ID == userID {
-			respondError(w, http.StatusForbidden, "You cannot delete your own account")
-			return
-		}
+	if current := currentUser(r); current != nil && current.ID == userID {
+		respondError(w, http.StatusForbidden, "You cannot delete your own account")
+		return
 	}
 
 	// Logic to delete user and all associated data
@@ -60,18 +58,12 @@ func (h *AdminHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, map[string]string{"message": "User deleted successfully"})
 }
 
-// AdminOnly middleware restricts access to admins.
+// AdminOnly middleware restricts access to admins. Must run after RequireAuth.
 func (h *AdminHandler) AdminOnly(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie("session_id")
-		if err != nil {
+		user := currentUser(r)
+		if user == nil {
 			respondError(w, http.StatusUnauthorized, "Not authenticated")
-			return
-		}
-
-		user, err := h.authService.GetUserByToken(cookie.Value)
-		if err != nil || user == nil {
-			respondError(w, http.StatusUnauthorized, "Invalid session")
 			return
 		}
 

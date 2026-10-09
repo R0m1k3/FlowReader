@@ -16,6 +16,9 @@ type rateLimiter struct {
 	capacity float64 // max tokens (burst)
 }
 
+// maxBuckets caps the number of tracked keys per limiter.
+const maxBuckets = 50_000
+
 type bucket struct {
 	tokens float64
 	last   time.Time
@@ -40,6 +43,11 @@ func (rl *rateLimiter) allow(key string) bool {
 	now := time.Now()
 	b, ok := rl.buckets[key]
 	if !ok {
+		// Bound memory: under a flood of distinct keys, fail closed rather
+		// than growing the map without limit.
+		if len(rl.buckets) >= maxBuckets {
+			return false
+		}
 		rl.buckets[key] = &bucket{tokens: rl.capacity - 1, last: now}
 		return true
 	}
@@ -75,18 +83,36 @@ func (rl *rateLimiter) cleanupLoop() {
 
 // Middleware returns a chi-compatible middleware enforcing the limit per IP.
 func (rl *rateLimiter) Middleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !rl.allow(getClientIP(r)) {
+	return rl.middlewareBy(getClientIP)(next)
+}
+
+// middlewareBy enforces the limit per key computed from the request.
+func (rl *rateLimiter) middlewareBy(key func(*http.Request) string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if !rl.allow(key(r)) {
 			w.Header().Set("Retry-After", "60")
-			respondError(w, http.StatusTooManyRequests, "Too many requests. Please slow down.")
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
+				respondError(w, http.StatusTooManyRequests, "Too many requests. Please slow down.")
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }
 
 // NewAuthRateLimiter builds the limiter used for authentication routes:
 // 10 requests/minute per IP with a small burst.
 func NewAuthRateLimiter() func(http.Handler) http.Handler {
 	return newRateLimiter(10, 5).Middleware
+}
+
+// NewUserRateLimiter limits an authenticated user's calls to an expensive
+// endpoint (e.g. AI summaries). Must run after RequireAuth.
+func NewUserRateLimiter(perMinute, burst int) func(http.Handler) http.Handler {
+	return newRateLimiter(perMinute, burst).middlewareBy(func(r *http.Request) string {
+		if u := currentUser(r); u != nil {
+			return u.ID.String()
+		}
+		return getClientIP(r)
+	})
 }

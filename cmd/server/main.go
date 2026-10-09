@@ -3,9 +3,13 @@ package main
 import (
 	"context"
 	"log"
+	"mime"
 	"net/http"
 	"os"
 	"os/signal"
+	"path"
+	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -21,6 +25,9 @@ import (
 )
 
 func main() {
+	// PWA manifest: Go's mime table doesn't know this extension.
+	_ = mime.AddExtensionType(".webmanifest", "application/manifest+json")
+
 	// Load configuration
 	cfg := config.Load()
 
@@ -32,7 +39,7 @@ func main() {
 	}
 	defer pool.Close()
 
-	// Check migrations status (warning only, doesn't block)
+	// Apply pending migrations (warning only, doesn't block)
 	if err := database.RunMigrations(ctx, pool); err != nil {
 		log.Printf("Migration check warning: %v", err)
 	}
@@ -52,44 +59,38 @@ func main() {
 	hub := ws.NewHub()
 	go hub.Run()
 
-	fetchService := service.NewFetchService(feedRepo, articleRepo, hub)
+	// Keep outbound fetch concurrency modest so it doesn't starve the
+	// 10-connection DB pool used by API requests.
+	fetchService := service.NewFetchService(feedRepo, articleRepo, hub, 4)
 
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(authService)
 	feedHandler := handler.NewFeedHandler(feedService, fetchService, authService)
-	articleHandler := handler.NewArticleHandler(articleRepo, feedService, authService, aiService, hub)
+	articleHandler := handler.NewArticleHandler(articleRepo, aiService, hub)
 	wsHandler := handler.NewWSHandler(hub, authService)
 	adminHandler := handler.NewAdminHandler(userRepo, authService)
 
-	// Start background workers
-	fetcher := worker.NewFeedFetcher(fetchService, 15*time.Minute, 5)
+	// Start background workers. Each feed carries its own next_fetch_at; the
+	// fetcher only looks for due feeds every minute.
+	fetcher := worker.NewFeedFetcher(fetchService, time.Minute, 4)
 	fetcher.Start()
 	defer fetcher.Stop()
 
-	cleaner := worker.NewCleaner(articleRepo, 24*time.Hour)
+	cleaner := worker.NewCleaner(articleRepo, authService, 24*time.Hour)
 	cleaner.Start()
 	defer cleaner.Stop()
+
+	requireAuth := handler.RequireAuth(authService)
 
 	// Initialize router
 	r := chi.NewRouter()
 
-	// Middleware
+	// Note: no middleware.RealIP — client IPs come from RemoteAddr, and
+	// X-Forwarded-For is only honoured from TRUSTED_PROXIES (see handler).
+	r.Use(middleware.RequestID)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
-	r.Use(middleware.Timeout(30 * time.Second))
-
-	// Baseline security headers (defense in depth).
-	r.Use(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			w.Header().Set("X-Content-Type-Options", "nosniff")
-			w.Header().Set("X-Frame-Options", "DENY")
-			w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
-			w.Header().Set("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
-			next.ServeHTTP(w, req)
-		})
-	})
+	r.Use(handler.SecurityHeaders)
 
 	// Health check endpoint
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -103,85 +104,102 @@ func main() {
 	})
 
 	// API routes
-	r.Route("/api/v1", func(r chi.Router) {
-		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`{"message":"FlowReader API v1"}`))
+	r.Route("/api/v1", func(api chi.Router) {
+		api.Use(handler.SameOriginGuard)
+		api.Use(func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Cache-Control", "no-store")
+				next.ServeHTTP(w, r)
+			})
 		})
 
-		// Auth routes (public) — rate-limited to mitigate brute-force attacks.
-		r.Route("/auth", func(r chi.Router) {
-			r.Use(handler.NewAuthRateLimiter())
-			r.Post("/register", authHandler.Register)
-			r.Post("/login", authHandler.Login)
-			r.Post("/logout", authHandler.Logout)
+		// Regular JSON endpoints: compressed, 1 MiB bodies, 30s budget.
+		api.Group(func(r chi.Router) {
+			r.Use(middleware.Compress(5, "application/json", "application/xml", "text/plain"))
+			r.Use(handler.LimitBody(1 << 20))
+			r.Use(middleware.Timeout(30 * time.Second))
+
+			r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.Write([]byte(`{"message":"FlowReader API v1"}`))
+			})
+
+			// Auth routes (public) — rate-limited to mitigate brute-force attacks.
+			r.Route("/auth", func(r chi.Router) {
+				r.Use(handler.NewAuthRateLimiter())
+				r.Post("/register", authHandler.Register)
+				r.Post("/login", authHandler.Login)
+				r.Post("/logout", authHandler.Logout)
+			})
+
+			// Everything below requires a valid session (one SQL lookup).
+			r.Group(func(r chi.Router) {
+				r.Use(requireAuth)
+
+				r.Get("/users/me", authHandler.Me)
+
+				r.Route("/feeds", func(r chi.Router) {
+					r.Get("/", feedHandler.List)
+					r.Post("/", feedHandler.Add)
+					r.Post("/refresh", feedHandler.Refresh)
+					r.Get("/export/opml", feedHandler.ExportOPML)
+					r.Get("/{id}", feedHandler.Get)
+					r.Patch("/{id}", feedHandler.Update)
+					r.Delete("/{id}", feedHandler.Delete)
+					r.Get("/{id}/articles", articleHandler.ListByFeed)
+					r.Post("/{id}/read-all", articleHandler.MarkAllRead)
+				})
+
+				r.Route("/articles", func(r chi.Router) {
+					r.Get("/", articleHandler.List)
+					r.Get("/search", articleHandler.Search)
+					r.Post("/read-all", articleHandler.MarkAllReadGlobal)
+					r.Get("/favorites", articleHandler.GetFavorites)
+					r.Get("/{id}", articleHandler.Get)
+					r.Post("/{id}/read", articleHandler.MarkRead)
+					r.Delete("/{id}/read", articleHandler.MarkUnread)
+					r.Post("/{id}/favorite", articleHandler.ToggleFavorite)
+				})
+
+				r.Route("/admin", func(r chi.Router) {
+					r.Use(adminHandler.AdminOnly)
+					r.Get("/users", adminHandler.ListUsers)
+					r.Delete("/users/{id}", adminHandler.DeleteUser)
+				})
+			})
 		})
 
-		// User routes
-		r.Route("/users", func(r chi.Router) {
-			r.Get("/me", authHandler.Me)
-		})
+		// OPML import: larger body.
+		api.With(handler.LimitBody(5<<20), middleware.Timeout(60*time.Second), requireAuth).
+			Post("/feeds/import/opml", feedHandler.ImportOPML)
 
-		// Feed routes
-		r.Route("/feeds", func(r chi.Router) {
-			r.Get("/", feedHandler.List)
-			r.Post("/", feedHandler.Add)
-			r.Post("/refresh", feedHandler.Refresh)
-			r.Post("/import/opml", feedHandler.ImportOPML)
-			r.Get("/export/opml", feedHandler.ExportOPML)
-			r.Get("/{id}", feedHandler.Get)
-			r.Patch("/{id}", feedHandler.Update)
-			r.Delete("/{id}", feedHandler.Delete)
-			r.Get("/{id}/articles", articleHandler.ListByFeed)
-			r.Post("/{id}/read-all", articleHandler.MarkAllRead)
-		})
+		// AI summaries: slow (page extraction + LLM) and costly, so a longer
+		// budget and a per-user rate limit.
+		api.With(handler.LimitBody(1<<10), requireAuth, handler.NewUserRateLimiter(6, 3), middleware.Timeout(90*time.Second)).
+			Post("/articles/{id}/summarize", articleHandler.Summarize)
 
-		// Article routes
-		r.Route("/articles", func(r chi.Router) {
-			r.Get("/", articleHandler.List)
-			r.Get("/search", articleHandler.Search)
-			r.Post("/read-all", articleHandler.MarkAllReadGlobal)
-			r.Get("/favorites", articleHandler.GetFavorites)
-			r.Get("/{id}", articleHandler.Get)
-			r.Post("/{id}/read", articleHandler.MarkRead)
-			r.Delete("/{id}/read", articleHandler.MarkUnread)
-			r.Post("/{id}/favorite", articleHandler.ToggleFavorite)
-			r.Post("/{id}/summarize", articleHandler.Summarize)
-		})
-
-		// WebSocket route
-		r.Get("/ws", wsHandler.Connect)
-
-		// Admin routes
-		r.Route("/admin", func(r chi.Router) {
-			r.Use(adminHandler.AdminOnly)
-			r.Get("/users", adminHandler.ListUsers)
-			r.Delete("/users/{id}", adminHandler.DeleteUser)
-		})
+		// WebSocket: no compression or timeout middleware (hijacked conn).
+		api.With(requireAuth).Get("/ws", wsHandler.Connect)
 	})
 
 	// Serve Static Files (Frontend)
 	staticPath := "./web/dist"
 	if _, err := os.Stat(staticPath); err == nil {
-		fs := http.FileServer(http.Dir(staticPath))
-		r.Handle("/*", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// If the file exists, serve it, otherwise serve index.html (for SPA routing)
-			path := staticPath + r.URL.Path
-			if _, err := os.Stat(path); os.IsNotExist(err) {
-				http.ServeFile(w, r, staticPath+"/index.html")
-				return
-			}
-			fs.ServeHTTP(w, r)
-		}))
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.Compress(5, "text/html", "text/css", "application/javascript", "text/javascript", "image/svg+xml", "application/manifest+json"))
+			r.Handle("/*", spaHandler(staticPath))
+		})
 	}
 
 	// Create server
 	srv := &http.Server{
-		Addr:         ":" + cfg.Port,
-		Handler:      r,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		Addr:              ":" + cfg.Port,
+		Handler:           r,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      35 * time.Second, // summarize extends its own deadline
+		IdleTimeout:       120 * time.Second,
+		MaxHeaderBytes:    64 << 10,
 	}
 
 	// Graceful shutdown
@@ -206,4 +224,41 @@ func main() {
 	}
 
 	log.Println("Server exited properly")
+}
+
+// spaHandler serves the built frontend: hashed assets are cached forever,
+// HTML / service worker files must revalidate, unknown paths fall back to
+// index.html for client-side routing.
+func spaHandler(root string) http.Handler {
+	fs := http.FileServer(http.Dir(root))
+	index := filepath.Join(root, "index.html")
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Clean the URL path (always forward slashes) so "../" can't probe the
+		// container filesystem, then map it onto the OS path.
+		clean := path.Clean("/" + r.URL.Path)
+		full := filepath.Join(root, filepath.FromSlash(clean))
+
+		info, err := os.Stat(full)
+		if err != nil || info.IsDir() {
+			if strings.HasPrefix(clean, "/assets/") || strings.HasPrefix(clean, "/api/") {
+				http.NotFound(w, r)
+				return
+			}
+			w.Header().Set("Cache-Control", "no-cache")
+			http.ServeFile(w, r, index)
+			return
+		}
+
+		switch {
+		case strings.HasPrefix(clean, "/assets/"):
+			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+		case strings.HasSuffix(clean, ".html"), clean == "/sw.js", clean == "/registerSW.js",
+			strings.HasPrefix(clean, "/workbox-"), strings.HasSuffix(clean, ".webmanifest"):
+			w.Header().Set("Cache-Control", "no-cache")
+		default:
+			w.Header().Set("Cache-Control", "public, max-age=86400")
+		}
+		fs.ServeHTTP(w, r)
+	})
 }

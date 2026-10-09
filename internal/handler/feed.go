@@ -29,19 +29,12 @@ func NewFeedHandler(feedService *service.FeedService, fetchService *service.Fetc
 	}
 }
 
-// getUserFromRequest extracts the authenticated user from the request.
+// getUserFromRequest returns the user resolved by RequireAuth.
 func (h *FeedHandler) getUserFromRequest(r *http.Request) (uuid.UUID, error) {
-	cookie, err := r.Cookie("session_id")
-	if err != nil {
-		return uuid.Nil, errors.New("not authenticated")
+	if u := currentUser(r); u != nil {
+		return u.ID, nil
 	}
-
-	user, err := h.authService.GetUserByToken(cookie.Value)
-	if err != nil || user == nil {
-		return uuid.Nil, errors.New("invalid session")
-	}
-
-	return user.ID, nil
+	return uuid.Nil, errors.New("not authenticated")
 }
 
 // List handles GET /api/v1/feeds
@@ -91,7 +84,7 @@ func (h *FeedHandler) Add(w http.ResponseWriter, r *http.Request) {
 
 	// Trigger immediate fetch in background
 	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 		defer cancel()
 		_ = h.fetchService.FetchFeed(ctx, resp.ID)
 	}()
@@ -107,18 +100,13 @@ func (h *FeedHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// For now, we refresh all feeds for the user synchronously or in background
-	// Let's do background and return 202 Accepted
-	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-		defer cancel()
-
-		feeds, _ := h.feedService.GetUserFeeds(userID)
-		for _, f := range feeds {
-			_ = h.fetchService.FetchFeed(ctx, f.ID)
-		}
-	}()
-
+	// Runs in the background through the shared worker pool; concurrent
+	// clicks for the same user are coalesced and recently fetched feeds skipped.
+	started := h.fetchService.RefreshUser(userID)
+	if !started {
+		respondJSON(w, http.StatusAccepted, map[string]string{"message": "Refresh already running"})
+		return
+	}
 	respondJSON(w, http.StatusAccepted, map[string]string{"message": "Refresh started"})
 }
 
@@ -236,8 +224,8 @@ func (h *FeedHandler) ImportOPML(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse multipart form (max 10MB)
-	if err := r.ParseMultipartForm(10 << 20); err != nil {
+	// Parse multipart form (body already capped by the router; keep it in memory)
+	if err := r.ParseMultipartForm(5 << 20); err != nil {
 		respondError(w, http.StatusBadRequest, "Invalid form data")
 		return
 	}
@@ -252,7 +240,7 @@ func (h *FeedHandler) ImportOPML(w http.ResponseWriter, r *http.Request) {
 	// Parse OPML
 	feeds, err := opml.Parse(file)
 	if err != nil {
-		respondError(w, http.StatusBadRequest, "Invalid OPML file: "+err.Error())
+		respondError(w, http.StatusBadRequest, "Invalid OPML file")
 		return
 	}
 
@@ -269,8 +257,17 @@ func (h *FeedHandler) ImportOPML(w http.ResponseWriter, r *http.Request) {
 	// Import feeds
 	result, err := h.feedService.ImportOPML(userID, opmlFeeds)
 	if err != nil {
+		if errors.Is(err, service.ErrTooManyFeeds) {
+			respondError(w, http.StatusBadRequest, err.Error())
+			return
+		}
 		respondError(w, http.StatusInternalServerError, "Import failed")
 		return
+	}
+
+	// Fetch the newly imported feeds right away.
+	if result.Imported > 0 {
+		h.fetchService.RefreshUser(userID)
 	}
 
 	respondJSON(w, http.StatusOK, result)

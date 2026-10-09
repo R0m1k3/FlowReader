@@ -2,11 +2,13 @@
 package service
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -23,18 +25,44 @@ var (
 	ErrEmailAlreadyExists = errors.New("email already registered")
 	ErrUserNotFound       = errors.New("user not found")
 	ErrInvalidCredentials = errors.New("invalid credentials")
+	ErrPasswordTooLong    = errors.New("password too long")
+	ErrRegistrationClosed = errors.New("registration disabled")
 )
 
-// Argon2 parameters (OWASP recommended)
+// Argon2id parameters: OWASP minimum (m=19 MiB, t=2, p=1). Lighter on memory
+// than the previous 64 MiB so a small container survives concurrent logins.
+// Existing hashes keep verifying: parameters are read from the stored hash.
 const (
-	argon2Time      = 1
-	argon2Memory    = 64 * 1024 // 64MB
-	argon2Threads   = 4
+	argon2Time      = 2
+	argon2Memory    = 19 * 1024 // 19 MiB
+	argon2Threads   = 1
 	argon2KeyLen    = 32
+	maxPasswordLen  = 256
 	saltLength      = 16
 	tokenLength     = 32
 	sessionDuration = 7 * 24 * time.Hour // 7 days
 )
+
+// hashSem bounds concurrent Argon2 computations so a burst of logins can't
+// exhaust memory.
+var hashSem = make(chan struct{}, 1)
+
+var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+
+// dummyHash is verified against when the user doesn't exist so login timing
+// doesn't reveal which emails have accounts.
+var dummyHash, _ = hashPassword("flowreader-timing-equaliser")
+
+// RegistrationEnabled reports whether new accounts may be created. The first
+// account (admin bootstrap) is always allowed. Set REGISTRATION_ENABLED=false
+// to close sign-ups on a public instance.
+func RegistrationEnabled() bool {
+	switch strings.ToLower(os.Getenv("REGISTRATION_ENABLED")) {
+	case "false", "0", "no":
+		return false
+	}
+	return true
+}
 
 // AuthService handles user authentication business logic.
 type AuthService struct {
@@ -89,6 +117,18 @@ type UserInfo struct {
 
 // Register creates a new user account.
 func (s *AuthService) Register(req RegisterRequest) (*RegisterResponse, error) {
+	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
+
+	if !RegistrationEnabled() {
+		users, err := s.userRepo.List()
+		if err != nil {
+			return nil, fmt.Errorf("checking registration: %w", err)
+		}
+		if len(users) > 0 {
+			return nil, ErrRegistrationClosed
+		}
+	}
+
 	// Validate email format
 	if !isValidEmail(req.Email) {
 		return nil, ErrInvalidEmail
@@ -97,6 +137,9 @@ func (s *AuthService) Register(req RegisterRequest) (*RegisterResponse, error) {
 	// Validate password length
 	if len(req.Password) < 8 {
 		return nil, ErrPasswordTooShort
+	}
+	if len(req.Password) > maxPasswordLen {
+		return nil, ErrPasswordTooLong
 	}
 
 	// Check if email already exists
@@ -138,12 +181,18 @@ func (s *AuthService) Register(req RegisterRequest) (*RegisterResponse, error) {
 
 // Login authenticates a user and creates a session.
 func (s *AuthService) Login(req LoginRequest) (*LoginResponse, error) {
+	if len(req.Password) > maxPasswordLen {
+		return nil, ErrInvalidCredentials
+	}
+
 	// Find user by email
-	user, err := s.userRepo.GetByEmail(req.Email)
+	user, err := s.userRepo.GetByEmail(strings.TrimSpace(req.Email))
 	if err != nil {
 		return nil, fmt.Errorf("finding user: %w", err)
 	}
 	if user == nil {
+		// Burn the same CPU as a real check to avoid user enumeration by timing.
+		verifyPassword(req.Password, dummyHash)
 		return nil, ErrInvalidCredentials
 	}
 
@@ -190,22 +239,27 @@ func (s *AuthService) Logout(token string) error {
 	return s.sessionRepo.Delete(token)
 }
 
-// GetUserByToken retrieves the user associated with a session token.
+// GetUserByToken retrieves the user associated with a session token in a
+// single query. Returns nil, nil for an unknown or expired session.
 func (s *AuthService) GetUserByToken(token string) (*domain.User, error) {
-	session, err := s.sessionRepo.GetByToken(token)
-	if err != nil {
-		return nil, fmt.Errorf("getting session: %w", err)
-	}
-	if session == nil {
-		return nil, nil // Invalid or expired session
-	}
+	return s.GetUserByTokenCtx(context.Background(), token)
+}
 
-	user, err := s.userRepo.GetByID(session.UserID)
-	if err != nil {
-		return nil, fmt.Errorf("getting user: %w", err)
+// GetUserByTokenCtx is GetUserByToken bound to a request context.
+func (s *AuthService) GetUserByTokenCtx(ctx context.Context, token string) (*domain.User, error) {
+	if token == "" {
+		return nil, nil
 	}
-
+	user, err := s.sessionRepo.GetUserByToken(ctx, token)
+	if err != nil {
+		return nil, fmt.Errorf("resolving session: %w", err)
+	}
 	return user, nil
+}
+
+// PurgeExpiredSessions deletes expired sessions.
+func (s *AuthService) PurgeExpiredSessions() (int64, error) {
+	return s.sessionRepo.DeleteExpired()
 }
 
 // hashPassword creates an Argon2id hash of the password.
@@ -215,7 +269,9 @@ func hashPassword(password string) (string, error) {
 		return "", err
 	}
 
+	hashSem <- struct{}{}
 	hash := argon2.IDKey([]byte(password), salt, argon2Time, argon2Memory, argon2Threads, argon2KeyLen)
+	<-hashSem
 
 	// Encode salt and hash together
 	encoded := fmt.Sprintf("$argon2id$v=%d$m=%d,t=%d,p=%d$%s$%s",
@@ -255,8 +311,15 @@ func verifyPassword(password, encodedHash string) bool {
 		return false
 	}
 
+	// Refuse absurd parameters from a tampered hash (memory in KiB).
+	if memory > 128*1024 || time > 10 || threads == 0 || threads > 8 {
+		return false
+	}
+
 	// Compute hash with same parameters
+	hashSem <- struct{}{}
 	computedHash := argon2.IDKey([]byte(password), salt, time, memory, threads, uint32(len(expectedHash)))
+	<-hashSem
 
 	// Constant-time comparison
 	return subtle.ConstantTimeCompare(expectedHash, computedHash) == 1
@@ -273,6 +336,5 @@ func generateToken() (string, error) {
 
 // isValidEmail checks if the email has a valid format.
 func isValidEmail(email string) bool {
-	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
-	return emailRegex.MatchString(email)
+	return len(email) <= 254 && emailRegex.MatchString(email)
 }
