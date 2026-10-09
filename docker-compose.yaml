@@ -7,7 +7,17 @@ services:
       - "8080:8080"
     environment:
       - PORT=8080
-      - DATABASE_URL=postgres://flowreader:flowreader@db:5432/flowreader?sslmode=disable
+      # Set a strong password in a .env file next to this compose file.
+      # Note: POSTGRES_PASSWORD only applies when the volume is first created.
+      - DATABASE_URL=postgres://flowreader:${POSTGRES_PASSWORD:-flowreader}@db:5432/flowreader?sslmode=disable
+      # Close public sign-ups once your account exists (the first account is admin).
+      - REGISTRATION_ENABLED=${REGISTRATION_ENABLED:-true}
+      # Behind a reverse proxy (Traefik, NPM, Caddy…): its IP/CIDR, so rate
+      # limiting sees real client IPs. Leave empty when exposed directly.
+      - TRUSTED_PROXIES=${TRUSTED_PROXIES:-}
+      # Force Secure cookies when served over HTTPS behind a proxy.
+      - COOKIE_SECURE=${COOKIE_SECURE:-}
+      - GOMEMLIMIT=48MiB
     depends_on:
       db:
         condition: service_healthy
@@ -27,12 +37,14 @@ services:
     image: postgres:16-alpine
     environment:
       - POSTGRES_USER=flowreader
-      - POSTGRES_PASSWORD=flowreader
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-flowreader}
       - POSTGRES_DB=flowreader
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    # Not published on the host: only the app container needs the database.
+    # Uncomment for local debugging only (and bind to 127.0.0.1).
+    # ports:
+    #   - "127.0.0.1:5432:5432"
     restart: unless-stopped
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U flowreader -d flowreader" ]

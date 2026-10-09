@@ -26,14 +26,16 @@
 Thumbs.db
 task.md
 
-# Go
+# Go (go.sum is committed for reproducible, verified builds)
 vendor/
-go.sum
 
 # Node
 node_modules/
 npm-debug.log
 yarn-error.log
+
+# Tooling
+.playwright-mcp/
 
 # FlowReader Specific
 /_bmad-output/tmp/

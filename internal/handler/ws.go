@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/michael/flowreader/internal/service"
@@ -22,20 +21,12 @@ func NewWSHandler(hub *ws.Hub, authService *service.AuthService) *WSHandler {
 	}
 }
 
-// Connect handles WebSocket initiation.
+// Connect handles WebSocket initiation (behind RequireAuth).
 func (h *WSHandler) Connect(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("session_id")
-	if err != nil {
+	user := currentUser(r)
+	if user == nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-
-	user, err := h.authService.GetUserByToken(cookie.Value)
-	if err != nil || user == nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	log.Printf("Setting up WS for user %s", user.ID)
 	h.hub.ServeWS(user.ID, w, r)
 }

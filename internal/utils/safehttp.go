@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"strings"
 	"syscall"
@@ -39,7 +40,29 @@ func isDisallowedIP(ip net.IP) bool {
 			return true
 		}
 	}
+	if addr, ok := netip.AddrFromSlice(ip); ok {
+		addr = addr.Unmap()
+		for _, p := range extraBlockedPrefixes {
+			if p.Contains(addr) {
+				return true
+			}
+		}
+	}
 	return false
+}
+
+// extraBlockedPrefixes covers reserved ranges and IPv6 transition prefixes
+// that can embed an internal IPv4 address (NAT64, 6to4, Teredo, IPv4-compatible).
+var extraBlockedPrefixes = []netip.Prefix{
+	netip.MustParsePrefix("192.0.0.0/24"),    // IETF protocol assignments
+	netip.MustParsePrefix("198.18.0.0/15"),   // benchmarking
+	netip.MustParsePrefix("240.0.0.0/4"),     // reserved + broadcast
+	netip.MustParsePrefix("::/96"),           // IPv4-compatible (deprecated)
+	netip.MustParsePrefix("64:ff9b::/96"),    // NAT64
+	netip.MustParsePrefix("64:ff9b:1::/48"),  // local-use NAT64
+	netip.MustParsePrefix("2002::/16"),       // 6to4
+	netip.MustParsePrefix("2001::/32"),       // Teredo
+	netip.MustParsePrefix("100::/64"),        // discard-only
 }
 
 // ValidateExternalURL parses raw, enforces http(s), and verifies that the host

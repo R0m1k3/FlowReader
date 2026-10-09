@@ -87,13 +87,30 @@ Un template dédié est fourni pour les utilisateurs d'Unraid.
 | `PORT` | Port du serveur | `8080` |
 | `DATABASE_URL` | Connexion PostgreSQL | `postgres://...` |
 | `OPENROUTER_API_KEY` | Clé pour les résumés IA | *(Optionnel)* |
+| `OPENROUTER_MODEL` | Modèle utilisé pour les résumés | `google/gemini-2.0-flash-001` |
+| `POSTGRES_PASSWORD` | Mot de passe PostgreSQL (compose, à mettre dans `.env`) | `flowreader` — **à changer** |
+| `REGISTRATION_ENABLED` | `false` pour fermer les inscriptions (le 1er compte, admin, reste possible) | `true` |
+| `TRUSTED_PROXIES` | IP/CIDR du reverse proxy (ex. `172.16.0.0/12`) pour le rate-limit par IP client | *(vide)* |
+| `COOKIE_SECURE` | Forcer le cookie `Secure` (HTTPS derrière proxy) | auto |
+| `WS_ALLOWED_ORIGINS` | Origines WebSocket supplémentaires | *(vide)* |
+
+> 🔒 La base PostgreSQL n'est plus exposée sur l'hôte par défaut. Changez `POSTGRES_PASSWORD`
+> **avant** le premier démarrage (il n'est appliqué qu'à la création du volume).
+
+### Lecture
+
+- Raccourcis clavier : `j`/`k` naviguer, `o` ouvrir, `m` lu/non lu, `s` favori, `v` original,
+  `/` rechercher, `u` non lus/tous, `r` actualiser, `Espace` page suivante puis article suivant,
+  `?` aide.
+- Bouton **Aa** dans le lecteur : thème (clair, sépia, sombre, auto), police (serif, sans,
+  Atkinson Hyperlegible), taille, interligne et largeur de colonne.
 
 ## 🛠️ Développement
 
 Envie de mettre les mains dans le code ?
 
 ```bash
-# Pré-requis : Go 1.22+, Node 20+, Docker
+# Pré-requis : Go 1.26+, Node 22+, Docker
 
 # 1. Lancer les services (DB)
 make docker-up

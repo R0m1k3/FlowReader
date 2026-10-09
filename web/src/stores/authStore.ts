@@ -10,6 +10,7 @@ interface User {
 interface AuthState {
     user: User | null;
     isAuthenticated: boolean;
+    /** True until the first /users/me answer when nothing is persisted. */
     isLoading: boolean;
     setUser: (user: User | null) => void;
     setLoading: (loading: boolean) => void;
@@ -24,7 +25,7 @@ export const useAuthStore = create<AuthState>()(
             isLoading: true,
             setUser: (user) => set({ user, isAuthenticated: !!user, isLoading: false }),
             setLoading: (isLoading) => set({ isLoading }),
-            logout: () => set({ user: null, isAuthenticated: false }),
+            logout: () => set({ user: null, isAuthenticated: false, isLoading: false }),
         }),
         {
             name: 'auth-storage',
@@ -32,3 +33,15 @@ export const useAuthStore = create<AuthState>()(
         }
     )
 );
+
+/** Clears every client-side copy of the user's data (logout / expired session). */
+export async function clearUserData() {
+    try {
+        if ('caches' in window) {
+            const keys = await caches.keys();
+            await Promise.all(keys.filter((k) => k.startsWith('api') || k === 'images').map((k) => caches.delete(k)));
+        }
+    } catch {
+        /* ignore */
+    }
+}

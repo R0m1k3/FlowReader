@@ -3,7 +3,9 @@ package service
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -16,7 +18,20 @@ var (
 	ErrFeedExists   = errors.New("feed already exists")
 	ErrFeedNotFound = errors.New("feed not found")
 	ErrUnauthorized = errors.New("unauthorized access")
+	ErrTooManyFeeds = errors.New("too many feeds in OPML file (max 500)")
 )
+
+// maxOPMLFeeds bounds a single OPML import.
+const maxOPMLFeeds = 500
+
+// validFeedURL accepts only absolute http(s) URLs.
+func validFeedURL(raw string) (string, bool) {
+	u, err := url.ParseRequestURI(raw)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" || len(raw) > 2048 {
+		return "", false
+	}
+	return u.String(), true
+}
 
 // FeedService handles feed-related business logic.
 type FeedService struct {
@@ -44,14 +59,11 @@ type AddFeedResponse struct {
 
 // AddFeed creates a new feed subscription.
 func (s *FeedService) AddFeed(req AddFeedRequest) (*AddFeedResponse, error) {
-	// Validate URL
-	parsedURL, err := url.ParseRequestURI(req.URL)
-	if err != nil || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https") {
+	// Validate and normalize URL
+	normalizedURL, ok := validFeedURL(strings.TrimSpace(req.URL))
+	if !ok {
 		return nil, ErrInvalidURL
 	}
-
-	// Normalize URL
-	normalizedURL := parsedURL.String()
 
 	// Check if feed already exists for this user
 	existing, err := s.feedRepo.GetByURL(req.UserID, normalizedURL)
@@ -163,20 +175,28 @@ type ImportOPMLResult struct {
 // ImportOPML imports feeds from an OPML file.
 func (s *FeedService) ImportOPML(userID uuid.UUID, opmlFeeds []OPMLFeedInfo) (*ImportOPMLResult, error) {
 	result := &ImportOPMLResult{}
+	if len(opmlFeeds) > maxOPMLFeeds {
+		return nil, ErrTooManyFeeds
+	}
 
 	for _, opmlFeed := range opmlFeeds {
-		// Validate URL
-		_, err := url.ParseRequestURI(opmlFeed.URL)
-		if err != nil {
-			result.Errors = append(result.Errors, fmt.Sprintf("Invalid URL: %s", opmlFeed.URL))
+		// Validate URL (http/https only)
+		feedURL, ok := validFeedURL(strings.TrimSpace(opmlFeed.URL))
+		if !ok {
+			result.Errors = append(result.Errors, fmt.Sprintf("Invalid URL: %.200s", opmlFeed.URL))
 			result.Skipped++
 			continue
+		}
+		opmlFeed.URL = feedURL
+		if _, ok := validFeedURL(opmlFeed.SiteURL); !ok {
+			opmlFeed.SiteURL = ""
 		}
 
 		// Check if already exists
 		existing, err := s.feedRepo.GetByURL(userID, opmlFeed.URL)
 		if err != nil {
-			result.Errors = append(result.Errors, fmt.Sprintf("Error checking %s: %v", opmlFeed.URL, err))
+			log.Printf("OPML import: checking %s: %v", opmlFeed.URL, err)
+			result.Errors = append(result.Errors, fmt.Sprintf("Could not import %.200s", opmlFeed.URL))
 			result.Skipped++
 			continue
 		}
@@ -202,7 +222,8 @@ func (s *FeedService) ImportOPML(userID uuid.UUID, opmlFeeds []OPMLFeedInfo) (*I
 		}
 
 		if err := s.feedRepo.Create(feed); err != nil {
-			result.Errors = append(result.Errors, fmt.Sprintf("Error creating %s: %v", opmlFeed.URL, err))
+			log.Printf("OPML import: creating %s: %v", opmlFeed.URL, err)
+			result.Errors = append(result.Errors, fmt.Sprintf("Could not import %.200s", opmlFeed.URL))
 			result.Skipped++
 			continue
 		}

@@ -9,62 +9,96 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'robots.txt', 'apple-touch-icon.png'],
+      // Never reload the page under the reader: the app shows an update toast.
+      registerType: 'prompt',
+      includeAssets: ['favicon.svg', 'theme-init.js'],
       manifest: {
         name: 'FlowReader',
         short_name: 'FlowReader',
         description: 'Lecteur RSS minimaliste et rapide',
-        theme_color: '#166534',
-        background_color: '#166534',
+        lang: 'fr',
+        theme_color: '#15643A',
+        background_color: '#F7F4EC',
         display: 'standalone',
+        start_url: '/',
         icons: [
           {
             src: 'favicon.svg',
             sizes: 'any',
             type: 'image/svg+xml',
-            purpose: 'any maskable'
-          }
-        ]
+            purpose: 'any',
+          },
+        ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        // App shell + Latin font subsets only (other subsets load on demand).
+        globPatterns: ['**/*.{js,css,html,svg}', '**/*-latin-wght-*.woff2', '**/*-latin-[47]00-*.woff2'],
+        navigateFallbackDenylist: [/^\/api\//, /^\/health/],
+        cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/images\.unsplash\.com\/.*/i,
-            handler: 'CacheFirst',
+            // Opened articles stay readable offline.
+            urlPattern: ({ url, request }) =>
+              request.method === 'GET' && /^\/api\/v1\/articles\/[0-9a-f-]{36}$/.test(url.pathname),
+            handler: 'NetworkFirst',
             options: {
-              cacheName: 'unsplash-images',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 Days
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
+              cacheName: 'api-articles',
+              networkTimeoutSeconds: 4,
+              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 7 },
+              cacheableResponse: { statuses: [200] },
             },
           },
           {
-            urlPattern: /\/api\/v1\/.*/i,
+            urlPattern: ({ url, request }) =>
+              request.method === 'GET' &&
+              /^\/api\/v1\/(articles|feeds)(\/|$|\?)/.test(url.pathname) &&
+              !url.pathname.startsWith('/api/v1/feeds/export'),
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'api-cache',
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24, // 24 Hours
-              },
+              cacheName: 'api-lists',
+              networkTimeoutSeconds: 4,
+              expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 },
+              cacheableResponse: { statuses: [200] },
+            },
+          },
+          {
+            urlPattern: ({ request }) => request.destination === 'image',
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'images',
+              expiration: { maxEntries: 400, maxAgeSeconds: 60 * 60 * 24 * 30, purgeOnQuotaError: true },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: ({ request }) => request.destination === 'font',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'fonts',
+              expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 },
             },
           },
         ],
       },
     })
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        // Long-lived vendor chunk: app deploys don't invalidate React/Query.
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-dom/client', 'scheduler', 'react-router-dom', '@tanstack/react-query', 'zustand'],
+        },
+      },
+    },
+  },
   server: {
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: process.env.VITE_API_TARGET ?? 'http://localhost:8080',
         changeOrigin: true,
+        ws: true,
       },
     },
   },

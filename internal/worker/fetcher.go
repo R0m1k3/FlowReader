@@ -19,7 +19,8 @@ type FeedFetcher struct {
 	wg           sync.WaitGroup
 }
 
-// NewFeedFetcher creates a new feed fetcher worker.
+// NewFeedFetcher creates a new feed fetcher worker. The interval is how often
+// due feeds are looked for; each feed carries its own next_fetch_at.
 func NewFeedFetcher(fetchService *service.FetchService, interval time.Duration, concurrency int) *FeedFetcher {
 	return &FeedFetcher{
 		fetchService: fetchService,
@@ -66,7 +67,7 @@ func (f *FeedFetcher) fetch() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	count, err := f.fetchService.FetchAllPending(ctx, f.concurrency)
+	count, err := f.fetchService.FetchAllPending(ctx)
 	if err != nil {
 		log.Printf("Feed fetch error: %v", err)
 		return

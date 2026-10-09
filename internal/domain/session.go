@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"context"
 	"time"
 
 	"github.com/google/uuid"
@@ -21,6 +22,8 @@ type Session struct {
 type SessionRepository interface {
 	Create(session *Session) error
 	GetByToken(token string) (*Session, error)
+	// GetUserByToken resolves a session token to its user in one query.
+	GetUserByToken(ctx context.Context, token string) (*User, error)
 	Delete(token string) error
 	DeleteByUserID(userID uuid.UUID) error
 	DeleteExpired() (int64, error)

@@ -7,10 +7,21 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"sync"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+)
+
+const (
+	// Time allowed to write a message to the peer.
+	writeWait = 10 * time.Second
+	// Time allowed to read the next pong message from the peer.
+	pongWait = 60 * time.Second
+	// Send pings to peer with this period. Must be less than pongWait.
+	pingPeriod = (pongWait * 9) / 10
+	// Maximum message size allowed from peer (clients don't send data).
+	maxMessageSize = 512
 )
 
 // allowedWSOrigins holds optional extra origins (comma-separated) from the
@@ -55,6 +66,12 @@ type Event struct {
 	Payload json.RawMessage `json:"payload"`
 }
 
+// userEvent is an event addressed to every connection of a single user.
+type userEvent struct {
+	userID uuid.UUID
+	data   []byte
+}
+
 // Client represents a connected user via websocket.
 type Client struct {
 	ID   uuid.UUID
@@ -63,27 +80,22 @@ type Client struct {
 	Hub  *Hub
 }
 
-// Hub maintains the set of active clients and broadcasts messages.
+// Hub maintains the set of active clients and routes messages to them.
+// The clients map is only ever touched by the Run goroutine.
 type Hub struct {
-	// Registered clients by user ID
-	clients map[uuid.UUID][]*Client
-	// Broadcast channel for messages
-	broadcast chan Event
-	// Register requests from clients
-	register chan *Client
-	// Unregister requests from clients
+	clients    map[uuid.UUID]map[*Client]struct{}
+	broadcast  chan userEvent
+	register   chan *Client
 	unregister chan *Client
-
-	mu sync.RWMutex
 }
 
 // NewHub creates a new hub.
 func NewHub() *Hub {
 	return &Hub{
-		broadcast:  make(chan Event),
+		broadcast:  make(chan userEvent, 256),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
-		clients:    make(map[uuid.UUID][]*Client),
+		clients:    make(map[uuid.UUID]map[*Client]struct{}),
 	}
 }
 
@@ -92,61 +104,64 @@ func (h *Hub) Run() {
 	for {
 		select {
 		case client := <-h.register:
-			h.mu.Lock()
-			h.clients[client.ID] = append(h.clients[client.ID], client)
-			h.mu.Unlock()
-			log.Printf("Client registered: %s", client.ID)
+			set := h.clients[client.ID]
+			if set == nil {
+				set = make(map[*Client]struct{})
+				h.clients[client.ID] = set
+			}
+			set[client] = struct{}{}
 
 		case client := <-h.unregister:
-			h.mu.Lock()
-			clients := h.clients[client.ID]
-			for i, c := range clients {
-				if c == client {
-					h.clients[client.ID] = append(clients[:i], clients[i+1:]...)
-					break
+			h.remove(client)
+
+		case ev := <-h.broadcast:
+			for client := range h.clients[ev.userID] {
+				select {
+				case client.Send <- ev.data:
+				default:
+					// Slow consumer: drop it. remove() is idempotent so a
+					// later unregister from readPump is harmless.
+					h.remove(client)
 				}
 			}
-			if len(h.clients[client.ID]) == 0 {
-				delete(h.clients, client.ID)
-			}
-			h.mu.Unlock()
-			close(client.Send)
-			log.Printf("Client unregistered: %s", client.ID)
-
-		case event := <-h.broadcast:
-			// For now, broadcast simple news to all clients of a specific user or global
-			// But since we need user-specific notifications for feeds, we'd ideally pass UserID in Event
-			// Let's enhance Event struct for this or broadcast to all for now if it's "new articles available"
-			// and let them refetch.
-
-			data, _ := json.Marshal(event)
-
-			h.mu.RLock()
-			for _, userClients := range h.clients {
-				for _, client := range userClients {
-					select {
-					case client.Send <- data:
-					default:
-						// Close slow connections
-						go func(c *Client) { h.unregister <- c }(client)
-					}
-				}
-			}
-			h.mu.RUnlock()
 		}
 	}
 }
 
-// Broadcast sends an event to all connected clients.
-func (h *Hub) Broadcast(eventType string, payload interface{}) {
-	data, err := json.Marshal(payload)
-	if err != nil {
-		log.Printf("Error marshaling broadcast payload: %v", err)
+// remove unregisters a client and closes its send channel exactly once.
+func (h *Hub) remove(client *Client) {
+	set, ok := h.clients[client.ID]
+	if !ok {
 		return
 	}
-	h.broadcast <- Event{
-		Type:    eventType,
-		Payload: json.RawMessage(data),
+	if _, ok := set[client]; !ok {
+		return
+	}
+	delete(set, client)
+	close(client.Send)
+	if len(set) == 0 {
+		delete(h.clients, client.ID)
+	}
+}
+
+// SendToUser sends an event to every connection of the given user only.
+func (h *Hub) SendToUser(userID uuid.UUID, eventType string, payload interface{}) {
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		log.Printf("Error marshaling WS payload: %v", err)
+		return
+	}
+	data, err := json.Marshal(Event{Type: eventType, Payload: raw})
+	if err != nil {
+		log.Printf("Error marshaling WS event: %v", err)
+		return
+	}
+	select {
+	case h.broadcast <- userEvent{userID: userID, data: data}:
+	default:
+		// Never block request handlers on a saturated hub; clients resync
+		// on their next query anyway.
+		log.Printf("WS hub saturated, dropping %s event", eventType)
 	}
 }
 
@@ -161,12 +176,11 @@ func (h *Hub) ServeWS(userID uuid.UUID, w http.ResponseWriter, r *http.Request) 
 	client := &Client{
 		ID:   userID,
 		Conn: conn,
-		Send: make(chan []byte, 256),
+		Send: make(chan []byte, 64),
 		Hub:  h,
 	}
 	h.register <- client
 
-	// Start goroutines for reading and writing
 	go client.writePump()
 	go client.readPump()
 }
@@ -177,45 +191,45 @@ func (c *Client) readPump() {
 		c.Conn.Close()
 	}()
 
+	c.Conn.SetReadLimit(maxMessageSize)
+	c.Conn.SetReadDeadline(time.Now().Add(pongWait))
+	c.Conn.SetPongHandler(func(string) error {
+		return c.Conn.SetReadDeadline(time.Now().Add(pongWait))
+	})
+
 	for {
-		_, _, err := c.Conn.ReadMessage()
-		if err != nil {
+		if _, _, err := c.Conn.ReadMessage(); err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				log.Printf("WS read error: %v", err)
 			}
-			break
+			return
 		}
-		// We don't expect messages from client yet
+		// Clients don't send messages; anything received is ignored.
 	}
 }
 
 func (c *Client) writePump() {
+	ticker := time.NewTicker(pingPeriod)
 	defer func() {
+		ticker.Stop()
 		c.Conn.Close()
 	}()
 
 	for {
 		select {
 		case message, ok := <-c.Send:
+			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
-
-			w, err := c.Conn.NextWriter(websocket.TextMessage)
-			if err != nil {
+			// One frame per event so the client can JSON.parse each one.
+			if err := c.Conn.WriteMessage(websocket.TextMessage, message); err != nil {
 				return
 			}
-			w.Write(message)
-
-			// Add queued messages to the current writer
-			n := len(c.Send)
-			for i := 0; i < n; i++ {
-				w.Write([]byte{'\n'})
-				w.Write(<-c.Send)
-			}
-
-			if err := w.Close(); err != nil {
+		case <-ticker.C:
+			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := c.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
 		}

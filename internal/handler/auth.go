@@ -52,8 +52,12 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 			respondError(w, http.StatusBadRequest, "Invalid email format")
 		case errors.Is(err, service.ErrPasswordTooShort):
 			respondError(w, http.StatusBadRequest, "Password must be at least 8 characters")
+		case errors.Is(err, service.ErrPasswordTooLong):
+			respondError(w, http.StatusBadRequest, "Password is too long")
 		case errors.Is(err, service.ErrEmailAlreadyExists):
 			respondError(w, http.StatusConflict, "Email already registered")
+		case errors.Is(err, service.ErrRegistrationClosed):
+			respondError(w, http.StatusForbidden, "Registration is disabled on this instance")
 		default:
 			respondError(w, http.StatusInternalServerError, "Registration failed")
 		}
@@ -123,24 +127,9 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, map[string]string{"message": "Logged out successfully"})
 }
 
-// Me handles GET /api/v1/users/me
+// Me handles GET /api/v1/users/me (behind RequireAuth).
 func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("session_id")
-	if err != nil {
-		respondError(w, http.StatusUnauthorized, "Not authenticated")
-		return
-	}
-
-	user, err := h.authService.GetUserByToken(cookie.Value)
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, "Failed to get user")
-		return
-	}
-	if user == nil {
-		respondError(w, http.StatusUnauthorized, "Session expired")
-		return
-	}
-
+	user := currentUser(r)
 	respondJSON(w, http.StatusOK, service.UserInfo{
 		ID:      user.ID,
 		Email:   user.Email,
@@ -148,31 +137,15 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// getClientIP extracts the client IP from the request.
-func getClientIP(r *http.Request) string {
-	// Check X-Forwarded-For header
-	forwarded := r.Header.Get("X-Forwarded-For")
-	if forwarded != "" {
-		// Take the first IP in the chain
-		parts := strings.Split(forwarded, ",")
-		return strings.TrimSpace(parts[0])
-	}
-
-	// Check X-Real-IP header
-	realIP := r.Header.Get("X-Real-IP")
-	if realIP != "" {
-		return realIP
-	}
-
-	// Fall back to RemoteAddr
-	return r.RemoteAddr
-}
-
 // respondJSON writes a JSON response.
 func respondJSON(w http.ResponseWriter, status int, data interface{}) {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
+	enc := json.NewEncoder(w)
+	// Safe: served as application/json with nosniff; avoids inflating HTML
+	// content with \u003c escapes.
+	enc.SetEscapeHTML(false)
+	enc.Encode(data)
 }
 
 // respondError writes an error response.

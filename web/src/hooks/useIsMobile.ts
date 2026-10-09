@@ -1,14 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useSyncExternalStore } from 'react';
+
+const query = '(max-width: 768px)';
+
+function subscribe(cb: () => void) {
+    const media = window.matchMedia(query);
+    media.addEventListener('change', cb);
+    return () => media.removeEventListener('change', cb);
+}
 
 export function useIsMobile() {
-    const [isMobile, setIsMobile] = useState(window.matchMedia('(max-width: 768px)').matches);
+    return useSyncExternalStore(subscribe, () => window.matchMedia(query).matches, () => false);
+}
 
-    useEffect(() => {
-        const media = window.matchMedia('(max-width: 768px)');
-        const listener = (e: MediaQueryListEvent) => setIsMobile(e.matches);
-        media.addEventListener('change', listener);
-        return () => media.removeEventListener('change', listener);
-    }, []);
-
-    return isMobile;
+/** True when the user asked the OS to minimise motion. */
+export function prefersReducedMotion() {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }

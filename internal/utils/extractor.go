@@ -3,12 +3,16 @@ package utils
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
 )
+
+// maxPageBytes bounds how much of a remote page is read.
+const maxPageBytes = 5 << 20
 
 // ContentExtractor extracts the main text content from a web page.
 type ContentExtractor struct {
@@ -52,7 +56,10 @@ func (e *ContentExtractor) Extract(ctx context.Context, url string) (string, err
 		return "", fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if resp.ContentLength > maxPageBytes {
+		return "", fmt.Errorf("page too large")
+	}
+	doc, err := goquery.NewDocumentFromReader(io.LimitReader(resp.Body, maxPageBytes))
 	if err != nil {
 		return "", fmt.Errorf("parsing HTML: %w", err)
 	}
@@ -102,9 +109,7 @@ func (e *ContentExtractor) Extract(ctx context.Context, url string) (string, err
 	}
 
 	// Limit to 10000 characters to avoid huge payloads to AI
-	if len(content) > 10000 {
-		content = content[:10000]
-	}
+	content = TruncateRunes(content, 10000)
 
 	return content, nil
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { articlesApi, type Article } from '../api/articles';
+import { useQuery } from '@tanstack/react-query';
+import { MotionConfig } from 'framer-motion';
+import { articlesApi } from '../api/articles';
 import { FocusCardStack } from '../components/focus/FocusCardStack';
 import { FocusEmptyState } from '../components/focus/FocusEmptyState';
 
@@ -9,74 +10,66 @@ interface FocusPageProps {
 }
 
 export function FocusPage({ onExit }: FocusPageProps) {
-    const queryClient = useQueryClient();
     const [isComplete, setIsComplete] = useState(false);
 
-    const { data: articles, isLoading } = useQuery({
-        queryKey: ['articles', 'focus-mode'],
+    // Snapshot of unread articles for the session. Read/favorite updates are
+    // patched into this cache entry, never refetched, so the deck stays stable.
+    const { data: articles, isPending, isError, refetch } = useQuery({
+        queryKey: ['articles', 'focus'],
         queryFn: () => articlesApi.list({ unread: true, limit: 100 }),
-        staleTime: 0,
+        staleTime: Infinity,
+        gcTime: 0,
     });
 
-    // Snapshot the unread set once into a stable deck for the whole session,
-    // so marking articles read mid-session never reshuffles the stack. This is
-    // the React-endorsed "adjust state during render" pattern (guarded to run
-    // exactly once), not an effect.
-    const [deck, setDeck] = useState<Article[]>([]);
-    const [seeded, setSeeded] = useState(false);
-    if (!seeded && articles && articles.length > 0) {
-        setDeck(articles);
-        setSeeded(true);
-    }
+    // Deck order is frozen on first load (ids only; live data comes from the cache).
+    const [deckIds, setDeckIds] = useState<string[] | null>(null);
+    if (deckIds === null && articles) setDeckIds(articles.map((a) => a.id));
 
-    const invalidate = () => {
-        queryClient.invalidateQueries({ queryKey: ['articles'] });
-        queryClient.invalidateQueries({ queryKey: ['feeds'] });
-    };
+    const byId = new Map((articles ?? []).map((a) => [a.id, a]));
+    const deck = (deckIds ?? []).map((id) => byId.get(id)).filter((a) => !!a);
 
-    const markReadMutation = useMutation({ mutationFn: (id: string) => articlesApi.markRead(id), onSuccess: invalidate });
-    const toggleFavoriteMutation = useMutation({ mutationFn: (id: string) => articlesApi.toggleFavorite(id), onSuccess: invalidate });
-
-    if (isLoading && deck.length === 0) {
-        return (
-            <div className="flex items-center justify-center h-full bg-carbon/60 backdrop-blur-xl">
+    let body: React.ReactNode;
+    if (isPending) {
+        body = (
+            <div className="flex-1 flex items-center justify-center" role="status" aria-label="Chargement">
                 <div className="w-14 h-14 border-2 border-nature/20 border-t-nature rounded-full animate-spin" />
             </div>
         );
-    }
-
-    if (deck.length === 0 || isComplete) {
-        return (
-            <div className="fixed inset-0 z-50 bg-carbon/95 backdrop-blur-2xl flex items-center justify-center">
-                <FocusEmptyState onBack={onExit} />
+    } else if (isError) {
+        body = (
+            <div role="alert" className="flex-1 flex flex-col items-center justify-center gap-4 text-center">
+                <p className="font-serif italic text-xl text-paper-white">Impossible de charger vos articles.</p>
+                <button onClick={() => refetch()} className="btn-secondary">Réessayer</button>
             </div>
+        );
+    } else if (deck.length === 0 || isComplete) {
+        body = <FocusEmptyState onBack={onExit} />;
+    } else {
+        body = (
+            <main className="flex-1 flex items-center justify-center p-4 min-h-0">
+                <FocusCardStack articles={deck} onEmpty={() => setIsComplete(true)} onExit={onExit} />
+            </main>
         );
     }
 
     return (
-        <div className="fixed inset-0 z-50 bg-carbon/95 backdrop-blur-2xl flex flex-col">
-            <header className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-50">
-                <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-earth animate-pulse" />
-                    <span className="eyebrow text-paper-white">Mode Focus</span>
-                </div>
-                <button onClick={onExit} className="btn-secondary" title="Quitter le mode Focus">
-                    <span className="hidden sm:inline">Tableau de bord</span>
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </header>
-
-            <main className="flex-1 flex items-center justify-center p-4">
-                <FocusCardStack
-                    articles={deck}
-                    onMarkRead={(id) => markReadMutation.mutate(id)}
-                    onKeep={() => { /* skip — no API action */ }}
-                    onToggleFavorite={(id) => toggleFavoriteMutation.mutate(id)}
-                    onEmpty={() => setIsComplete(true)}
-                />
-            </main>
-        </div>
+        <MotionConfig reducedMotion="user">
+            <div className="fixed inset-0 z-50 bg-carbon flex flex-col animate-fade-in" role="region" aria-label="Mode Focus">
+                <header className="flex justify-between items-center p-4 sm:p-6 shrink-0">
+                    <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-earth animate-pulse" aria-hidden="true" />
+                        <span className="eyebrow text-paper-white">Mode Focus</span>
+                    </div>
+                    <button onClick={onExit} className="btn-secondary" title="Quitter le mode Focus (Échap)">
+                        <span className="hidden sm:inline">Tableau de bord</span>
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        <span className="sr-only sm:hidden">Quitter</span>
+                    </button>
+                </header>
+                {body}
+            </div>
+        </MotionConfig>
     );
 }
