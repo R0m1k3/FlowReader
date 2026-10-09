@@ -5,7 +5,6 @@ import { articlesApi, cursorAfter, type Article } from '../api/articles';
 import { feedsApi } from '../api/feeds';
 import { ArticleCard } from '../components/ArticleCard';
 import { Reader } from '../components/reader/Reader';
-import { SearchBox } from '../components/SearchBox';
 import { ShortcutsHelp } from '../components/ShortcutsHelp';
 import { findCachedArticle, useArticleActions } from '../hooks/useArticleActions';
 import { useLive } from '../hooks/useWebsocket';
@@ -16,7 +15,6 @@ const PAGE_SIZE = 30;
 
 interface DashboardPageProps {
     selectedFeedId: string | null;
-    onEnterFocus: () => void;
     /** Hidden (kept mounted) while focus mode is shown, to preserve scroll. */
     hidden?: boolean;
 }
@@ -26,14 +24,12 @@ function isTypingTarget(t: EventTarget | null) {
     return !!el && (el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName));
 }
 
-export function DashboardPage({ selectedFeedId, onEnterFocus, hidden }: DashboardPageProps) {
+export function DashboardPage({ selectedFeedId, hidden }: DashboardPageProps) {
     const qc = useQueryClient();
     const [params, setParams] = useSearchParams();
-    const [query, setQuery] = useState('');
     const [showHelp, setShowHelp] = useState(false);
     const mainRef = useRef<HTMLElement>(null);
     const loadMoreRef = useRef<HTMLDivElement>(null);
-    const searchRef = useRef<HTMLInputElement>(null);
     const [showScrollTop, setShowScrollTop] = useState(false);
 
     const unreadPref = usePrefs((s) => s.unreadOnly);
@@ -44,27 +40,21 @@ export function DashboardPage({ selectedFeedId, onEnterFocus, hidden }: Dashboar
 
     const favorites = selectedFeedId === 'favorites';
     const feedId = favorites ? null : selectedFeedId;
-    const searching = query.length > 0;
-    const unreadOnly = unreadPref && !favorites && !searching;
+    const unreadOnly = unreadPref && !favorites;
 
     const listKey = useMemo(
-        () => ['articles', { feedId, favorites, unread: unreadOnly, q: query }] as const,
-        [feedId, favorites, unreadOnly, query],
+        () => ['articles', { feedId, favorites, unread: unreadOnly }] as const,
+        [feedId, favorites, unreadOnly],
     );
 
     const { data, isPending, isError, refetch, isFetching, fetchNextPage, hasNextPage, isFetchingNextPage, isPlaceholderData } =
         useInfiniteQuery({
             queryKey: listKey,
             queryFn: ({ pageParam }) =>
-                searching
-                    ? articlesApi.search(query, PAGE_SIZE, Number(pageParam) || 0)
-                    : articlesApi.list({ limit: PAGE_SIZE, cursor: pageParam || undefined, unread: unreadOnly, favorites, feedId }),
+                articlesApi.list({ limit: PAGE_SIZE, cursor: pageParam || undefined, unread: unreadOnly, favorites, feedId }),
             initialPageParam: '' as string,
-            getNextPageParam: (last, all) => {
-                if (last.length < PAGE_SIZE) return undefined;
-                return searching ? String(all.length * PAGE_SIZE) : cursorAfter(last[last.length - 1]);
-            },
-            // Keep showing the previous list while a new filter/search loads.
+            getNextPageParam: (last) => (last.length < PAGE_SIZE ? undefined : cursorAfter(last[last.length - 1])),
+            // Keep showing the previous list while another feed or filter loads.
             placeholderData: keepPreviousData,
         });
 
@@ -214,9 +204,6 @@ export function DashboardPage({ selectedFeedId, onEnterFocus, hidden }: Dashboar
                 case 'v':
                     if (current?.url) window.open(current.url, '_blank', 'noopener,noreferrer');
                     break;
-                case '/':
-                    searchRef.current?.focus();
-                    break;
                 case 'u':
                     setUnreadOnly(!unreadPref);
                     break;
@@ -235,108 +222,73 @@ export function DashboardPage({ selectedFeedId, onEnterFocus, hidden }: Dashboar
         return () => window.removeEventListener('keydown', onKey);
     }, [hidden, openId, articles, hasNextPage, fetchNextPage, openReader, toggleRead, toggleFavorite, setUnreadOnly, unreadPref, refreshMutation]);
 
-    const heading = searching
-        ? `« ${query} »`
-        : favorites
-            ? 'Mes favoris'
-            : feedTitle ?? 'La Une';
+    const heading = favorites ? 'Favoris' : (feedTitle ?? 'Tous les articles');
 
     return (
         <main ref={mainRef} className={`flex-1 overflow-y-auto bg-carbon relative ${hidden ? 'hidden' : ''}`} aria-busy={isFetching}>
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 md:px-12 py-8 md:py-12">
-                {/* Masthead */}
-                <header className="mb-8 border-b border-paper-muted/15 pb-6">
-                    <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-5">
-                        <div className="min-w-0 flex-1 basis-72">
-                            <p className="eyebrow mb-2">{searching ? 'Recherche' : 'Édition du jour'}</p>
-                            <h1 className="text-4xl md:text-6xl font-serif italic text-paper-white tracking-tight text-balance break-words">
-                                {heading}
-                            </h1>
-                            <p className="text-paper-muted text-sm mt-3 font-reading" aria-live="polite">
-                                {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
-                                {!searching && !favorites && (
-                                    <span className="text-nature font-medium"> · {unreadTotal} non lu{unreadTotal > 1 ? 's' : ''}</span>
-                                )}
+                <header className="mb-8 flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+                    <div className="min-w-0">
+                        <h1 className="text-3xl md:text-4xl font-serif text-paper-white tracking-tight break-words">{heading}</h1>
+                        {!favorites && (
+                            <p className="text-paper-muted text-sm mt-1.5" aria-live="polite">
+                                {unreadTotal === 0
+                                    ? 'Tout est lu'
+                                    : `${unreadTotal} article${unreadTotal > 1 ? 's' : ''} non lu${unreadTotal > 1 ? 's' : ''}`}
                             </p>
-                        </div>
+                        )}
+                    </div>
 
-                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
-                            <div className="w-full sm:w-auto order-last sm:order-none">
-                                <SearchBox ref={searchRef} onSearch={setQuery} />
+                    <div className="flex items-center gap-2">
+                        {!favorites && (
+                            <div className="segmented" role="group" aria-label="Articles affichés">
+                                <button aria-pressed={unreadPref} onClick={() => setUnreadOnly(true)}>Non lus</button>
+                                <button aria-pressed={!unreadPref} onClick={() => setUnreadOnly(false)}>Tous</button>
                             </div>
-                            {!favorites && !searching && (
-                                <div className="segmented" role="group" aria-label="Filtrer les articles">
-                                    <button aria-pressed={unreadPref} onClick={() => setUnreadOnly(true)}>Non lus</button>
-                                    <button aria-pressed={!unreadPref} onClick={() => setUnreadOnly(false)}>Tous</button>
-                                </div>
-                            )}
+                        )}
+                        <button
+                            onClick={() => refreshMutation.mutate()}
+                            disabled={refreshMutation.isPending}
+                            className="icon-btn"
+                            title="Actualiser les flux (r)"
+                            aria-label="Actualiser les flux"
+                        >
+                            <svg className={`w-4 h-4 ${refreshMutation.isPending ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                        </button>
+                        {!favorites && unreadTotal > 0 && (
                             <button
-                                onClick={() => refreshMutation.mutate()}
-                                disabled={refreshMutation.isPending}
+                                onClick={() => {
+                                    if (window.confirm(`Marquer ${unreadTotal} article${unreadTotal > 1 ? 's' : ''} comme lu${unreadTotal > 1 ? 's' : ''} ?`)) {
+                                        markAllMutation.mutate();
+                                    }
+                                }}
+                                disabled={markAllMutation.isPending}
                                 className="icon-btn"
-                                title="Actualiser les flux (r)"
-                                aria-label="Actualiser les flux"
+                                title="Tout marquer comme lu"
+                                aria-label="Tout marquer comme lu"
                             >
-                                <svg className={`w-4 h-4 ${refreshMutation.isPending ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2 13l4 4L16 7m-4 10l1 1L22 7" />
                                 </svg>
                             </button>
-                            {!favorites && unreadTotal > 0 && (
-                                <button
-                                    onClick={() => {
-                                        if (window.confirm(`Marquer ${unreadTotal} article${unreadTotal > 1 ? 's' : ''} comme lu${unreadTotal > 1 ? 's' : ''} ?`)) {
-                                            markAllMutation.mutate();
-                                        }
-                                    }}
-                                    disabled={markAllMutation.isPending}
-                                    className="icon-btn"
-                                    title="Tout marquer comme lu"
-                                    aria-label="Tout marquer comme lu"
-                                >
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2 13l4 4L16 7m-4 10l1 1L22 7" />
-                                    </svg>
-                                </button>
-                            )}
-                            <button onClick={() => setShowHelp(true)} className="icon-btn hidden md:inline-flex" title="Raccourcis clavier (?)" aria-label="Raccourcis clavier">
-                                <span className="font-semibold">?</span>
-                            </button>
-                        </div>
+                        )}
                     </div>
                 </header>
 
-                {/* New articles announcement (never inserted under the reader's eyes) */}
-                {newCount > 0 && !searching && (
-                    <div className="sticky top-3 z-30 flex justify-center -mt-2 mb-6 pointer-events-none">
-                        <button onClick={showNew} className="btn-primary pointer-events-auto shadow-lg animate-rise">
-                            {newCount} nouvel{newCount > 1 ? 's' : ''} article{newCount > 1 ? 's' : ''} · Afficher
+                {/* New articles are announced, never inserted under the reader's eyes */}
+                {newCount > 0 && (
+                    <div className="sticky top-3 z-30 flex justify-center mb-6 pointer-events-none">
+                        <button onClick={showNew} className="btn-primary pointer-events-auto shadow-lg normal-case tracking-normal text-sm">
+                            Afficher {newCount} nouvel{newCount > 1 ? 's' : ''} article{newCount > 1 ? 's' : ''}
                         </button>
                     </div>
                 )}
 
-                {/* Focus CTA */}
-                {!feedId && !favorites && !searching && unreadTotal > 0 && (
-                    <button
-                        onClick={onEnterFocus}
-                        className="group w-full mb-8 relative overflow-hidden rounded-2xl bg-nature text-on-nature flex items-center justify-between gap-4 p-5 sm:p-6 text-left transition-transform hover:scale-[1.003]"
-                    >
-                        <span className="relative z-10">
-                            <span className="text-[11px] uppercase tracking-[0.3em] font-bold opacity-85">Mode Focus</span>
-                            <span className="block text-xl sm:text-2xl font-serif italic mt-1">Votre session de lecture</span>
-                            <span className="block opacity-90 text-sm mt-1">{unreadTotal} articles non lus à trier d'un geste.</span>
-                        </span>
-                        <span className="relative z-10 shrink-0 inline-flex items-center gap-2 rounded-full bg-carbon-light text-nature font-bold text-xs uppercase tracking-[0.16em] px-5 min-h-11">
-                            Lancer
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                            </svg>
-                        </span>
-                    </button>
-                )}
-
                 {/* Grid */}
                 {isPending ? (
-                    <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3" aria-label="Chargement des articles" role="status">
+                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3" aria-label="Chargement des articles" role="status">
                         {Array.from({ length: 6 }, (_, i) => (
                             <div key={i} className="rounded-2xl bg-carbon-light border border-paper-muted/10 overflow-hidden">
                                 <div className="aspect-[16/9] bg-carbon-dark animate-pulse" />
@@ -350,7 +302,7 @@ export function DashboardPage({ selectedFeedId, onEnterFocus, hidden }: Dashboar
                     </div>
                 ) : isError && articles.length === 0 ? (
                     <div role="alert" className="flex flex-col items-center justify-center py-24 border border-dashed border-paper-muted/25 rounded-3xl text-center px-6 gap-4">
-                        <p className="text-paper-white font-serif italic text-xl">
+                        <p className="text-paper-white font-serif text-xl">
                             {navigator.onLine ? 'Impossible de charger vos articles.' : 'Vous êtes hors ligne.'}
                         </p>
                         <button onClick={() => refetch()} className="btn-secondary">Réessayer</button>
@@ -358,7 +310,7 @@ export function DashboardPage({ selectedFeedId, onEnterFocus, hidden }: Dashboar
                 ) : articles.length > 0 ? (
                     <>
                         <div
-                            className={`grid gap-6 sm:grid-cols-2 xl:grid-cols-3 transition-opacity ${isPlaceholderData ? 'opacity-60' : ''}`}
+                            className={`grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 transition-opacity ${isPlaceholderData ? 'opacity-60' : ''}`}
                         >
                             {articles.map((article, i) => (
                                 <ArticleCard
@@ -378,7 +330,7 @@ export function DashboardPage({ selectedFeedId, onEnterFocus, hidden }: Dashboar
                             ) : !hasNextPage ? (
                                 <div className="flex items-center gap-3">
                                     <span className="h-px w-16 bg-nature/25" />
-                                    <p className="eyebrow text-paper-muted">Fin de l'édition</p>
+                                    <p className="text-sm text-paper-muted">Fin de la liste</p>
                                     <span className="h-px w-16 bg-nature/25" />
                                 </div>
                             ) : null}
@@ -386,25 +338,21 @@ export function DashboardPage({ selectedFeedId, onEnterFocus, hidden }: Dashboar
                     </>
                 ) : (
                     <div className="flex flex-col items-center justify-center py-24 border border-dashed border-paper-muted/25 rounded-3xl text-center px-6 gap-3">
-                        <p className="text-paper-white font-serif italic text-2xl">
-                            {searching
-                                ? `Aucun article pour « ${query} ».`
-                                : favorites
-                                    ? 'Aucun favori pour le moment.'
-                                    : unreadOnly && (feeds?.length ?? 0) > 0
-                                        ? 'Vous êtes à jour 🌿'
-                                        : 'Votre bibliothèque est vide.'}
+                        <p className="text-paper-white font-serif text-2xl">
+                            {favorites
+                                ? 'Aucun favori'
+                                : unreadOnly && (feeds?.length ?? 0) > 0
+                                    ? 'Tout est lu'
+                                    : 'Aucun article'}
                         </p>
                         <p className="text-paper-muted text-sm">
-                            {searching
-                                ? 'Essayez d’autres mots-clés.'
-                                : favorites
-                                    ? 'Appuyez sur l’étoile d’un article pour le garder ici.'
-                                    : unreadOnly && (feeds?.length ?? 0) > 0
-                                        ? 'Tous les articles sont lus.'
-                                        : 'Ajoutez un flux avec le bouton +.'}
+                            {favorites
+                                ? 'Touchez l’étoile d’un article pour le retrouver ici.'
+                                : unreadOnly && (feeds?.length ?? 0) > 0
+                                    ? 'Les nouveaux articles apparaîtront ici.'
+                                    : 'Ajoutez un flux avec le bouton +.'}
                         </p>
-                        {unreadOnly && !searching && (feeds?.length ?? 0) > 0 && (
+                        {unreadOnly && (feeds?.length ?? 0) > 0 && (
                             <button onClick={() => setUnreadOnly(false)} className="btn-secondary mt-2">Voir tous les articles</button>
                         )}
                     </div>

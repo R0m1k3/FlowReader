@@ -1,4 +1,5 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
+import { lazyNamed } from './lib/lazy';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore, clearUserData } from './stores/authStore';
@@ -8,9 +9,9 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { UpdateToast } from './components/UpdateToast';
 
 // Route-level code splitting: the reader app and the auth screens load separately.
-const LoginPage = lazy(() => import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })));
-const RegisterPage = lazy(() => import('./pages/RegisterPage').then((m) => ({ default: m.RegisterPage })));
-const RootLayout = lazy(() => import('./layouts/RootLayout').then((m) => ({ default: m.RootLayout })));
+const LoginPage = lazyNamed(() => import('./pages/LoginPage'), 'LoginPage');
+const RegisterPage = lazyNamed(() => import('./pages/RegisterPage'), 'RegisterPage');
+const RootLayout = lazyNamed(() => import('./layouts/RootLayout'), 'RootLayout');
 
 const queryClient = new QueryClient({
   defaultOptions: {
