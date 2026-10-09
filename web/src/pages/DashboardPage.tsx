@@ -226,7 +226,7 @@ export function DashboardPage({ selectedFeedId, hidden }: DashboardPageProps) {
 
     return (
         <main ref={mainRef} className={`flex-1 overflow-y-auto bg-carbon relative ${hidden ? 'hidden' : ''}`} aria-busy={isFetching}>
-            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 md:px-12 py-8 md:py-12">
+            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 md:px-12 py-6 md:py-8">
                 <header className="mb-8 flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
                     <div className="min-w-0">
                         <h1 className="text-3xl md:text-4xl font-serif text-paper-white tracking-tight break-words">{heading}</h1>
