@@ -66,7 +66,6 @@ export function DashboardPage({ selectedFeedId, hidden }: DashboardPageProps) {
         if (feedId) return feeds.find((f) => f.id === feedId)?.unread_count ?? 0;
         return feeds.reduce((n, f) => n + (f.unread_count ?? 0), 0);
     }, [feeds, feedId]);
-    const feedTitle = feedId ? feeds?.find((f) => f.id === feedId)?.title : undefined;
 
     // ---------- Reader state lives in the URL (?a=<id>) so Back closes it ----------
     const openId = params.get('a');
@@ -222,22 +221,19 @@ export function DashboardPage({ selectedFeedId, hidden }: DashboardPageProps) {
         return () => window.removeEventListener('keydown', onKey);
     }, [hidden, openId, articles, hasNextPage, fetchNextPage, openReader, toggleRead, toggleFavorite, setUnreadOnly, unreadPref, refreshMutation]);
 
-    const heading = favorites ? 'Favoris' : (feedTitle ?? 'Tous les articles');
 
     return (
         <main ref={mainRef} className={`flex-1 overflow-y-auto bg-carbon relative ${hidden ? 'hidden' : ''}`} aria-busy={isFetching}>
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 md:px-12 py-6 md:py-8">
-                <header className="mb-8 flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
-                    <div className="min-w-0">
-                        <h1 className="text-3xl md:text-4xl font-serif text-paper-white tracking-tight break-words">{heading}</h1>
-                        {!favorites && (
-                            <p className="text-paper-muted text-sm mt-1.5" aria-live="polite">
-                                {unreadTotal === 0
-                                    ? 'Tout est lu'
-                                    : `${unreadTotal} article${unreadTotal > 1 ? 's' : ''} non lu${unreadTotal > 1 ? 's' : ''}`}
-                            </p>
-                        )}
-                    </div>
+                {/* The page title is the feed selector in the top bar. */}
+                <div className="mb-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+                    <p className="text-paper-muted text-sm" aria-live="polite">
+                        {favorites
+                            ? `${articles.length}${hasNextPage ? '+' : ''} favori${articles.length > 1 ? 's' : ''}`
+                            : unreadTotal === 0
+                                ? 'Tout est lu'
+                                : `${unreadTotal} article${unreadTotal > 1 ? 's' : ''} non lu${unreadTotal > 1 ? 's' : ''}`}
+                    </p>
 
                     <div className="flex items-center gap-2">
                         {!favorites && (
@@ -275,7 +271,7 @@ export function DashboardPage({ selectedFeedId, hidden }: DashboardPageProps) {
                             </button>
                         )}
                     </div>
-                </header>
+                </div>
 
                 {/* New articles are announced, never inserted under the reader's eyes */}
                 {newCount > 0 && (
