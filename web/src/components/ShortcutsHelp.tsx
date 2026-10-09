@@ -9,7 +9,6 @@ const GROUPS: { title: string; keys: [string, string][] }[] = [
             ['m', 'Marquer lu / non lu'],
             ['s · f', 'Favori'],
             ['v', 'Ouvrir l’original'],
-            ['/', 'Rechercher'],
             ['u', 'Basculer Non lus / Tous'],
             ['r', 'Actualiser les flux'],
         ],
@@ -18,9 +17,9 @@ const GROUPS: { title: string; keys: [string, string][] }[] = [
         title: 'Lecture',
         keys: [
             ['Espace', 'Défiler, puis article suivant'],
-            ['j · → / k · ←', 'Suivant / précédent'],
+            ['j · → / k · ←', 'Article suivant / précédent'],
             ['+ / -', 'Taille du texte'],
-            ['Échap', 'Fermer'],
+            ['Échap', 'Fermer l’article'],
         ],
     },
 ];
@@ -51,11 +50,11 @@ export function ShortcutsHelp({ onClose }: { onClose: () => void }) {
                 className="surface-card w-full max-w-lg p-7 outline-none animate-rise"
                 onClick={(e) => e.stopPropagation()}
             >
-                <h2 id="shortcuts-title" className="text-2xl font-serif italic text-nature mb-5">Raccourcis clavier</h2>
+                <h2 id="shortcuts-title" className="text-2xl font-serif text-paper-white mb-5">Raccourcis clavier</h2>
                 <div className="grid sm:grid-cols-2 gap-6">
                     {GROUPS.map((g) => (
                         <section key={g.title}>
-                            <h3 className="eyebrow text-paper-muted mb-3">{g.title}</h3>
+                            <h3 className="text-sm font-semibold text-paper-white mb-3">{g.title}</h3>
                             <dl className="space-y-2 text-sm">
                                 {g.keys.map(([k, label]) => (
                                     <div key={k} className="flex items-center justify-between gap-3">

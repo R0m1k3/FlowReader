@@ -14,12 +14,24 @@ import './index.css'
 import App from './App.tsx'
 import { useUpdate } from './stores/updateStore'
 
-// Prompt-based updates: a new version never reloads the page mid-read.
-const updateSW = registerSW({
+const reload = () => window.location.reload()
+
+registerSW({
+  immediate: true,
   onNeedRefresh() {
-    useUpdate.getState().setAvailable(() => updateSW(true))
+    useUpdate.getState().setAvailable(reload)
   },
 })
+
+// The service worker activates new versions right away; when it takes over a
+// page that was already controlled, offer a reload instead of forcing one
+// under the reader.
+if ('serviceWorker' in navigator) {
+  const hadController = !!navigator.serviceWorker.controller
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (hadController) useUpdate.getState().setAvailable(reload)
+  })
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

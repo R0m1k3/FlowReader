@@ -85,7 +85,7 @@ export function Sidebar({ onSelectFeed, selectedFeedId, onEnterFocus, isFocusMod
                     <div className="flex items-center justify-between mb-7">
                         <button
                             onClick={() => onSelectFeed(null)}
-                            className="text-nature text-2xl font-serif italic tracking-tight hover:opacity-80 transition-opacity"
+                            className="text-nature text-2xl font-serif tracking-tight hover:opacity-80 transition-opacity"
                         >
                             FlowReader
                         </button>
@@ -141,7 +141,7 @@ export function Sidebar({ onSelectFeed, selectedFeedId, onEnterFocus, isFocusMod
                                     : 'bg-nature/5 text-nature border border-nature/20 hover:bg-nature hover:text-on-nature'
                             }`}
                         >
-                            <span className="text-[11px] font-bold uppercase tracking-[0.18em] flex items-center">
+                            <span className="text-sm font-medium flex items-center">
                                 <svg className="w-4 h-4 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                                 </svg>
@@ -150,7 +150,7 @@ export function Sidebar({ onSelectFeed, selectedFeedId, onEnterFocus, isFocusMod
                         </button>
                     </div>
 
-                    <h3 className="px-4 pt-4 pb-2 text-[11px] uppercase tracking-[0.3em] font-bold text-paper-muted">Mes flux</h3>
+                    <h3 className="px-4 pt-5 pb-2 text-sm font-semibold text-paper-muted">Flux</h3>
 
                     {feeds && feeds.length > 0 ? feeds.map((feed) => (
                         <div key={feed.id} className="group/item relative flex items-center">
@@ -207,7 +207,7 @@ export function Sidebar({ onSelectFeed, selectedFeedId, onEnterFocus, isFocusMod
                     <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0">
                             <p className="text-xs font-bold text-paper-white truncate">{user?.email ?? 'Compte'}</p>
-                            <p className="text-[11px] text-paper-muted uppercase tracking-widest font-bold">
+                            <p className="text-xs text-paper-muted">
                                 {user?.is_admin ? 'Administrateur' : 'Lecteur'}
                             </p>
                         </div>

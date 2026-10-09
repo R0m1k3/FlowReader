@@ -35,6 +35,12 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg}', '**/*-latin-wght-*.woff2', '**/*-latin-[47]00-*.woff2'],
         navigateFallbackDenylist: [/^\/api\//, /^\/health/],
         cleanupOutdatedCaches: true,
+        // Activate new versions immediately. A waiting worker would keep
+        // serving a stale app shell to clients that never send SKIP_WAITING
+        // (e.g. tabs still running a previous build), so the old UI would talk
+        // to the new API. The app shows a reload toast instead of reloading.
+        skipWaiting: true,
+        clientsClaim: true,
         runtimeCaching: [
           {
             // Opened articles stay readable offline.

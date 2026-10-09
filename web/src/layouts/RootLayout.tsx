@@ -1,11 +1,12 @@
-import { lazy, Suspense, useState } from 'react';
+import { Suspense, useState } from 'react';
+import { lazyNamed } from '../lib/lazy';
 import { Sidebar } from '../components/Sidebar';
 import { MobileTopBar } from '../components/MobileTopBar';
 import { DashboardPage } from '../pages/DashboardPage';
 import { useWebsocket } from '../hooks/useWebsocket';
 
 // Focus mode carries the gesture/animation code: load it only when used.
-const FocusPage = lazy(() => import('../pages/FocusPage').then((m) => ({ default: m.FocusPage })));
+const FocusPage = lazyNamed(() => import('../pages/FocusPage'), 'FocusPage');
 
 export function RootLayout() {
     const [selectedFeedId, setSelectedFeedId] = useState<string | null>(null);
@@ -35,7 +36,7 @@ export function RootLayout() {
                     />
                 )}
                 {/* Kept mounted in focus mode so the list keeps its scroll position. */}
-                <DashboardPage selectedFeedId={selectedFeedId} onEnterFocus={() => setIsFocusMode(true)} hidden={isFocusMode} />
+                <DashboardPage selectedFeedId={selectedFeedId} hidden={isFocusMode} />
             </div>
 
             {isFocusMode && (

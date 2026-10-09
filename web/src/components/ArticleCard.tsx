@@ -91,7 +91,7 @@ function ArticleCardImpl({ article, index, isCurrent, onOpen, onToggleRead, onTo
                     </span>
                     {!article.is_read && (
                         <div className="absolute top-0 right-0 w-24 h-24 overflow-hidden pointer-events-none" aria-hidden="true">
-                            <span className="absolute top-[18px] -right-[34px] w-[140px] rotate-45 bg-nature text-on-nature text-[11px] font-extrabold uppercase tracking-[0.18em] text-center py-1.5 shadow-lg shadow-black/20">
+                            <span className="absolute top-[18px] -right-[34px] w-[140px] rotate-45 bg-nature text-on-nature text-xs font-bold text-center py-1.5 shadow-lg shadow-black/20">
                                 Nouveau
                             </span>
                         </div>
