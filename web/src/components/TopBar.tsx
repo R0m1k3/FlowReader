@@ -211,7 +211,7 @@ export function TopBar({ onSelectFeed, selectedFeedId, onEnterFocus }: TopBarPro
     return (
         <>
             <header className="sticky top-0 z-30 bg-carbon/95 border-b border-paper-muted/12" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-                <div className="max-w-[1400px] mx-auto px-4 sm:px-6 md:px-12 h-16 flex items-center gap-3 sm:gap-6">
+                <div className="max-w-[2400px] mx-auto px-4 sm:px-6 md:px-12 h-16 flex items-center gap-3 sm:gap-6">
                     <span className="hidden sm:block text-nature text-lg font-serif shrink-0" aria-hidden="true">
                         FlowReader
                     </span>
