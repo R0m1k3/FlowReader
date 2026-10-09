@@ -1,7 +1,6 @@
 import { Suspense, useState } from 'react';
 import { lazyNamed } from '../lib/lazy';
-import { Sidebar } from '../components/Sidebar';
-import { MobileTopBar } from '../components/MobileTopBar';
+import { TopBar } from '../components/TopBar';
 import { DashboardPage } from '../pages/DashboardPage';
 import { useWebsocket } from '../hooks/useWebsocket';
 
@@ -16,25 +15,15 @@ export function RootLayout() {
     useWebsocket();
 
     return (
-        <div className="flex h-dvh bg-carbon overflow-hidden">
+        <div className="flex flex-col h-dvh bg-carbon overflow-hidden">
             <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[80] btn-primary">
                 Aller au contenu
             </a>
-            <Sidebar
-                onSelectFeed={setSelectedFeedId}
-                selectedFeedId={selectedFeedId}
-                onEnterFocus={() => setIsFocusMode(true)}
-                isFocusMode={isFocusMode}
-            />
+            {!isFocusMode && (
+                <TopBar selectedFeedId={selectedFeedId} onSelectFeed={setSelectedFeedId} onEnterFocus={() => setIsFocusMode(true)} />
+            )}
 
-            <div id="main-content" className="flex-1 flex flex-col min-w-0">
-                {!isFocusMode && (
-                    <MobileTopBar
-                        onSelectFeed={setSelectedFeedId}
-                        selectedFeedId={selectedFeedId}
-                        onEnterFocus={() => setIsFocusMode(true)}
-                    />
-                )}
+            <div id="main-content" className="flex-1 flex flex-col min-h-0">
                 {/* Kept mounted in focus mode so the list keeps its scroll position. */}
                 <DashboardPage selectedFeedId={selectedFeedId} hidden={isFocusMode} />
             </div>
