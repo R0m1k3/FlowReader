@@ -1,10 +1,16 @@
 // Formatters are built once: constructing Intl objects per render is costly in long lists.
 const shortDate = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const shortDateYear = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+
+/** Short date, with the year when it isn't the current one. */
+function shortWithYear(d: Date) {
+    return d.getFullYear() === new Date().getFullYear() ? shortDate.format(d) : shortDateYear.format(d);
+}
 const longDate = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 const relative = new Intl.RelativeTimeFormat('fr', { numeric: 'auto' });
 
 export function formatShort(iso?: string) {
-    return iso ? shortDate.format(new Date(iso)) : '';
+    return iso ? shortWithYear(new Date(iso)) : '';
 }
 
 export function formatLong(iso?: string) {
@@ -20,7 +26,7 @@ export function formatRelative(iso?: string) {
     if (abs < 3600) return relative.format(Math.round(diff / 60), 'minute');
     if (abs < 86400) return relative.format(Math.round(diff / 3600), 'hour');
     if (abs < 7 * 86400) return relative.format(Math.round(diff / 86400), 'day');
-    return shortDate.format(new Date(iso));
+    return shortWithYear(new Date(iso));
 }
 
 export function readingTimeLabel(minutes?: number) {

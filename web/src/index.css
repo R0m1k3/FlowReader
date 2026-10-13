@@ -113,11 +113,17 @@
   text-wrap: pretty;
 }
 
-/* Article grid: as many ~20rem columns as the width allows. */
+/* Article grid: as many ~20rem columns as the width allows, capped at 5.
+   The column minimum grows with the width once 5 columns fit, so a 6th
+   never appears. */
 @utility article-grid {
+  --grid-gap: 1.5rem;
   display: grid;
-  gap: 1.5rem;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  gap: var(--grid-gap);
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(min(100%, max(20rem, (100% - 4 * var(--grid-gap)) / 5 - 1px)), 1fr)
+  );
 }
 
 /* Skip rendering work for off-screen cards in long lists. */
