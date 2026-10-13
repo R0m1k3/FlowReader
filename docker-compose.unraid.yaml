@@ -2,6 +2,9 @@ services:
   app:
     # Utilise l'image construite par GitHub Actions
     image: ghcr.io/r0m1k3/flowreader:latest
+    # Télécharge la dernière image à chaque démarrage (`docker compose up -d`) :
+    # la nouvelle version publiée sur main est appliquée au prochain démarrage.
+    pull_policy: always
     container_name: flowreader-app
     # build:
     #   context: .
@@ -20,13 +23,18 @@ services:
       - TRUSTED_PROXIES=${TRUSTED_PROXIES:-}
       # Force Secure cookies when served over HTTPS behind a proxy.
       - COOKIE_SECURE=${COOKIE_SECURE:-}
-      - GOMEMLIMIT=48MiB
       # Optional: AI summaries (OpenRouter). Leave empty to disable.
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
     depends_on:
       db:
         condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:8080/health" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     # Mappage des logs si nécessaire
     # volumes:
     #   - /mnt/user/appdata/flowreader/logs:/app/logs

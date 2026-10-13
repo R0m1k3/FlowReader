@@ -26,8 +26,8 @@
 Thumbs.db
 task.md
 
-# Go (go.sum is committed for reproducible, verified builds)
-vendor/
+# Rust (Cargo.lock is committed for reproducible builds)
+/target/
 
 # Node
 node_modules/
