@@ -5,7 +5,7 @@
 
 ![FlowReader Dashboard](https://placehold.co/800x450/1e1e1e/FFF?text=Aperçu+Dashboard)
 
-[![Go Version](https://img.shields.io/badge/Go-1.24-00ADD8?style=flat-square&logo=go)](https://golang.org/)
+[![Rust](https://img.shields.io/badge/Rust-stable-000000?style=flat-square&logo=rust)](https://www.rust-lang.org/)
 [![React Version](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react)](https://react.dev/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker)](https://www.docker.com/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
@@ -38,7 +38,7 @@ Ne perdez plus de temps sur les articles "clickbait".
 
 Conçu pour l'auto-hébergement respectueux des ressources.
 
-- **Backend en Go :** Ultra-rapide et compilé.
+- **Backend en Rust :** Axum + Tokio + SQLx, un binaire statique de quelques Mo.
 - **Frontend React 19 :** Fluide et moderne.
 - **< 150MB RAM :** Tourne parfaitement sur un Raspberry Pi ou un NAS modeste.
 
@@ -80,6 +80,17 @@ Un template dédié est fourni pour les utilisateurs d'Unraid.
 
     *Note : Les données sont persistées dans `/mnt/user/appdata/flowreader`.*
 
+### Mises à jour
+
+L'image `ghcr.io/r0m1k3/flowreader:latest` est reconstruite à chaque merge sur `main`.
+Le compose Unraid utilise `pull_policy: always` : chaque démarrage avec
+`docker compose -f docker-compose.unraid.yaml up -d` télécharge la dernière image et
+applique la nouvelle version. Les migrations SQL s'appliquent seules au démarrage ;
+les comptes, sessions, flux et articles existants sont conservés.
+
+> ℹ️ Un simple `docker restart` relance le conteneur existant sans télécharger
+> d'image : utilisez `docker compose up -d` (ou « Update » dans l'interface Docker d'Unraid).
+
 ### Configuration (Variables d'Environnement)
 
 | Variable | Description | Défaut |
@@ -110,23 +121,23 @@ Un template dédié est fourni pour les utilisateurs d'Unraid.
 Envie de mettre les mains dans le code ?
 
 ```bash
-# Pré-requis : Go 1.26+, Node 22+, Docker
+# Pré-requis : Rust stable, Node 22+, PostgreSQL 16 (ou Docker)
 
-# 1. Lancer les services (DB)
-make docker-up
+# 1. Construire le frontend (servi par le backend depuis web/dist)
+make web
 
-# 2. Lancer le backend (avec reload)
-make dev-backend
+# 2. Lancer le backend
+DATABASE_URL=postgres://flowreader:flowreader@localhost:5432/flowreader?sslmode=disable make dev
 
-# 3. Lancer le frontend
-make dev-frontend
+# 3. Tests, format et lint (TEST_DATABASE_URL active le test d'intégration SQL)
+make test lint
 ```
 
 ## 🏗️ Architecture
 
 ```mermaid
 graph TD
-    Client[React Frontend] -->|API REST| Server[Go Backend]
+    Client[React Frontend] -->|API REST| Server[Rust Backend]
     Server -->|SQL| DB[(PostgreSQL)]
     Server -->|Fetch| RSS[Flux RSS Externes]
     Server -->|Analyze| AI[OpenRouter API]

@@ -1,26 +1,28 @@
-.PHONY: dev build run test lint clean docker-up docker-down migrate-up migrate-down migrate-create
+.PHONY: dev build run test lint fmt clean web docker-up docker-down docker-logs
 
-# Development
+# Development (expects a PostgreSQL reachable through DATABASE_URL)
 dev:
-	go run ./cmd/server
+	cargo run
 
 build:
-	go build -o bin/server ./cmd/server
+	cargo build --release
 
 run: build
-	./bin/server
+	./target/release/flowreader
 
-# Testing
+web:
+	cd web && npm ci && npm run build
+
+# Testing. Set TEST_DATABASE_URL to also run the database integration test.
 test:
-	go test -v ./...
+	cargo test
 
-test-coverage:
-	go test -coverprofile=coverage.out ./...
-	go tool cover -html=coverage.out -o coverage.html
-
-# Linting
 lint:
-	golangci-lint run
+	cargo fmt --check
+	cargo clippy --all-targets -- -D warnings
+
+fmt:
+	cargo fmt
 
 # Docker
 docker-up:
@@ -32,27 +34,6 @@ docker-down:
 docker-logs:
 	docker-compose logs -f
 
-# Database migrations
-# Requires: go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
-DB_URL ?= postgres://flowreader:flowreader@localhost:5432/flowreader?sslmode=disable
-
-migrate-up:
-	migrate -path ./migrations -database "$(DB_URL)" up
-
-migrate-down:
-	migrate -path ./migrations -database "$(DB_URL)" down 1
-
-migrate-drop:
-	migrate -path ./migrations -database "$(DB_URL)" drop -f
-
-migrate-create:
-	@read -p "Migration name: " name; \
-	migrate create -ext sql -dir ./migrations -seq $$name
-
-migrate-version:
-	migrate -path ./migrations -database "$(DB_URL)" version
-
 # Cleanup
 clean:
-	rm -rf bin/
-	rm -f coverage.out coverage.html
+	cargo clean

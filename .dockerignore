@@ -1,0 +1,8 @@
+target
+web/node_modules
+web/dist
+_bmad
+_bmad-output
+.git
+.claude
+*.md

@@ -17,7 +17,8 @@ services:
       - TRUSTED_PROXIES=${TRUSTED_PROXIES:-}
       # Force Secure cookies when served over HTTPS behind a proxy.
       - COOKIE_SECURE=${COOKIE_SECURE:-}
-      - GOMEMLIMIT=48MiB
+      # Optional: AI summaries (OpenRouter). Leave empty to disable.
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
     depends_on:
       db:
         condition: service_healthy

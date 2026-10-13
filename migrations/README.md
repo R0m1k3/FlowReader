@@ -2,7 +2,9 @@
 
 This folder contains versioned database migrations.
 
-Migrations are managed using `golang-migrate`.
+The server applies pending `*.up.sql` files in order at startup and records
+them in the `schema_migrations` table. `*.down.sql` files are kept for manual
+rollbacks.
 
 ## Naming Convention
 
@@ -15,13 +17,3 @@ Example:
 
 - `001_create_users.up.sql`
 - `001_create_users.down.sql`
-
-## Commands
-
-```bash
-# Apply all pending migrations
-make migrate-up
-
-# Rollback last migration
-make migrate-down
-```
