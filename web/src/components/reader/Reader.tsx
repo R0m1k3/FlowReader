@@ -3,18 +3,30 @@ import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSwipeable } from 'react-swipeable';
 import { articlesApi, type Article } from '../../api/articles';
-import { patchArticle, useArticleActions } from '../../hooks/useArticleActions';
+import { useArticleActions } from '../../hooks/useArticleActions';
 import { usePrefs } from '../../stores/prefsStore';
 import { formatLong, readingTimeLabel } from '../../lib/format';
 import { prepareArticleHtml } from '../../lib/html';
 import { ShareButton } from '../ShareButton';
+import { FeedAvatar } from '../FeedAvatar';
+import { Icon } from '../Icon';
 import { ReaderSettings } from './ReaderSettings';
+import { AiSummary } from './AiSummary';
 
 interface ReaderProps {
     /** The list item being read (title, image… shown instantly while the body loads). */
     article: Article;
     next?: Article;
     hasPrev?: boolean;
+    /**
+     * 'pane': the right-hand column of the desktop layout.
+     * 'overlay': full screen on phones, a card above the dimmed page on larger screens.
+     */
+    variant?: 'pane' | 'overlay';
+    /** Where the mobile back button returns to. */
+    backLabel?: string;
+    /** "3 sur 128" shown in the toolbar. */
+    position?: string;
     onClose: () => void;
     onNext?: () => void;
     onPrev?: () => void;
@@ -32,18 +44,22 @@ function isTypingTarget(t: EventTarget | null) {
     return !!el && (el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName));
 }
 
-const Chevron = ({ dir }: { dir: 'left' | 'right' }) => (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={dir === 'left' ? 'M15 19l-7-7 7-7' : 'M9 5l7 7-7 7'} />
-    </svg>
-);
-
 /**
- * Article opened as a large card above the (dimmed) grid.
- * Close: ✕, Escape or a click beside the card. Previous / next: side arrows
- * on desktop, bottom bar on mobile, j/k or ←/→ on the keyboard.
+ * The article reader. Close: ✕, Escape, back (or a click beside the card in
+ * overlay mode). Previous / next: toolbar arrows on desktop, "Suivant" in the
+ * bottom bar on phones, j/k or ←/→ on the keyboard, a horizontal swipe on touch.
  */
-export function Reader({ article: listArticle, next, hasPrev, onClose, onNext, onPrev }: ReaderProps) {
+export function Reader({
+    article: listArticle,
+    next,
+    hasPrev,
+    variant = 'overlay',
+    backLabel = 'Retour',
+    position,
+    onClose,
+    onNext,
+    onPrev,
+}: ReaderProps) {
     const qc = useQueryClient();
     const { toggleRead, toggleFavorite } = useArticleActions();
     const fontSize = usePrefs((s) => s.fontSize);
@@ -51,13 +67,13 @@ export function Reader({ article: listArticle, next, hasPrev, onClose, onNext, o
     const width = usePrefs((s) => s.width);
     const font = usePrefs((s) => s.font);
     const setFontSize = usePrefs((s) => s.setFontSize);
+    const overlay = variant === 'overlay';
 
-    const overlayRef = useRef<HTMLDivElement>(null);
+    const scrollRef = useRef<HTMLDivElement>(null);
     const progressRef = useRef<HTMLDivElement>(null);
     const titleRef = useRef<HTMLHeadingElement>(null);
     const [settingsOpen, setSettingsOpen] = useState(false);
-    const [summarizing, setSummarizing] = useState(false);
-    const [summaryError, setSummaryError] = useState('');
+    const [imgFailed, setImgFailed] = useState(false);
 
     const { data: detail, isError, refetch } = useQuery({
         queryKey: ['article', listArticle.id],
@@ -82,25 +98,25 @@ export function Reader({ article: listArticle, next, hasPrev, onClose, onNext, o
         return () => window.clearTimeout(t);
     }, [next, qc]);
 
-    // Modal behaviour: the app behind is inert and doesn't scroll; focus
-    // moves to the title and returns to the card that opened the article.
+    // Focus moves to the title. In overlay mode the app behind is inert and
+    // doesn't scroll, and focus returns to the row that opened the article.
     useLayoutEffect(() => {
-        const root = document.getElementById('root');
         const previous = document.activeElement as HTMLElement | null;
+        const root = overlay ? document.getElementById('root') : null;
         root?.setAttribute('inert', '');
-        document.body.style.overflow = 'hidden';
-        overlayRef.current?.scrollTo({ top: 0 });
+        if (overlay) document.body.style.overflow = 'hidden';
+        scrollRef.current?.scrollTo({ top: 0 });
         titleRef.current?.focus({ preventScroll: true });
         return () => {
             root?.removeAttribute('inert');
-            document.body.style.overflow = '';
-            previous?.focus?.({ preventScroll: true });
+            if (overlay) document.body.style.overflow = '';
+            if (overlay) previous?.focus?.({ preventScroll: true });
         };
-    }, []);
+    }, [overlay]);
 
     // Reading progress without React re-renders.
     useEffect(() => {
-        const el = overlayRef.current;
+        const el = scrollRef.current;
         if (!el) return;
         let frame = 0;
         const update = () => {
@@ -127,7 +143,7 @@ export function Reader({ article: listArticle, next, hasPrev, onClose, onNext, o
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
             if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || isTypingTarget(e.target)) return;
-            const el = overlayRef.current;
+            const el = scrollRef.current;
             switch (e.key) {
                 case 'Escape':
                     onClose();
@@ -174,7 +190,7 @@ export function Reader({ article: listArticle, next, hasPrev, onClose, onNext, o
         return () => window.removeEventListener('keydown', onKey);
     }, [onClose, onNext, onPrev, hasPrev, toggleFavorite, toggleRead, listArticle, openOriginal, fontSize, setFontSize]);
 
-    // Optional touch shortcut on phones; the buttons below do the same.
+    // Optional touch shortcut on phones; the buttons do the same.
     const swipe = useSwipeable({
         onSwipedLeft: (ev) => {
             if (!(ev.event.target as Element).closest('pre,table') && onNext) onNext();
@@ -188,19 +204,6 @@ export function Reader({ article: listArticle, next, hasPrev, onClose, onNext, o
         preventScrollOnSwipe: false,
     });
 
-    const summarize = async () => {
-        setSummarizing(true);
-        setSummaryError('');
-        try {
-            const res = await articlesApi.summarize(listArticle.id);
-            patchArticle(qc, listArticle.id, { ai_summary: res.summary });
-        } catch {
-            setSummaryError('Le résumé n’a pas pu être généré. Réessayez plus tard.');
-        } finally {
-            setSummarizing(false);
-        }
-    };
-
     const style = {
         '--reader-size': `${fontSize}px`,
         '--reader-leading': String(lineHeight),
@@ -209,161 +212,159 @@ export function Reader({ article: listArticle, next, hasPrev, onClose, onNext, o
     } as React.CSSProperties;
 
     const date = listArticle.published_at || listArticle.created_at;
+    const fav = !!article.is_favorite;
+    const showImage = !!listArticle.image_url && !imgFailed;
+
+    const favButton = (cls: string, size: number) => (
+        <button
+            onClick={() => toggleFavorite(listArticle)}
+            className={`${cls} ${fav ? '!text-earth' : ''}`}
+            aria-pressed={fav}
+            aria-label="Favori"
+            title={fav ? 'Retirer des favoris (s)' : 'Ajouter aux favoris (s)'}
+        >
+            <Icon name="star" size={size} filled={fav} />
+        </button>
+    );
 
     const body = (
         <div
-            ref={overlayRef}
-            className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-nature-dark/45 backdrop-blur-sm animate-fade-in"
+            ref={scrollRef}
+            className={
+                overlay
+                    ? 'fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-carbon-light md:bg-nature-dark/45 md:backdrop-blur-sm animate-fade-in'
+                    : 'h-full overflow-y-auto overscroll-contain bg-carbon-light'
+            }
             onMouseDown={(e) => {
                 // Click beside the card closes it.
-                if (e.target === e.currentTarget) onClose();
+                if (overlay && e.target === e.currentTarget) onClose();
             }}
         >
-            {/* Side arrows (desktop) */}
-            {hasPrev && onPrev && (
-                <button
-                    onClick={onPrev}
-                    className="hidden lg:flex fixed left-6 top-1/2 -translate-y-1/2 z-10 w-12 h-12 items-center justify-center rounded-full bg-carbon-light text-paper-white shadow-lg hover:text-nature transition-colors"
-                    aria-label="Article précédent"
-                    title="Article précédent (k)"
-                >
-                    <Chevron dir="left" />
-                </button>
-            )}
-            {onNext && (
-                <button
-                    onClick={onNext}
-                    className="hidden lg:flex fixed right-6 top-1/2 -translate-y-1/2 z-10 w-12 h-12 items-center justify-center rounded-full bg-carbon-light text-paper-white shadow-lg hover:text-nature transition-colors"
-                    aria-label="Article suivant"
-                    title="Article suivant (j)"
-                >
-                    <Chevron dir="right" />
-                </button>
-            )}
-
             <article
                 {...swipe}
-                role="dialog"
-                aria-modal="true"
+                role={overlay ? 'dialog' : undefined}
+                aria-modal={overlay ? true : undefined}
                 aria-labelledby="reader-title"
-                className="relative mx-auto w-full max-w-3xl min-h-full md:min-h-0 md:my-10 bg-carbon-light md:rounded-3xl overflow-clip animate-rise"
-                style={{ ...style, boxShadow: 'var(--shadow-float)' }}
+                className={
+                    overlay
+                        ? 'relative mx-auto w-full max-w-3xl min-h-full md:min-h-0 md:my-10 bg-carbon-light md:rounded-3xl md:shadow-[var(--shadow-float)] overflow-clip animate-rise flex flex-col'
+                        : 'min-h-full flex flex-col'
+                }
+                style={style}
             >
-                {/* Card header: source on the left, actions and close on the right */}
-                <div className="sticky top-0 z-20 bg-carbon-light/95 backdrop-blur border-b border-paper-muted/10">
-                    <div className="flex items-center gap-1 pl-5 pr-2 sm:pl-7 sm:pr-3 h-16">
-                        <div className="flex-1 min-w-0 text-sm">
-                            <p className="font-semibold text-nature truncate">{listArticle.feed_title || 'Article'}</p>
-                            <p className="text-paper-muted truncate">
-                                <time dateTime={date}>{formatLong(date)}</time> · {readingTimeLabel(listArticle.reading_time)}<span className="hidden sm:inline"> de lecture</span>
-                            </p>
-                        </div>
+                {/* Toolbar */}
+                <div className={`sticky top-0 z-20 bg-carbon-light/95 backdrop-blur border-b border-line ${overlay ? 'pt-safe md:pt-0' : ''}`}>
+                    <div className="flex items-center gap-0.5 h-[52px] md:h-[60px] pl-1 pr-1.5 md:px-3">
                         <button
-                            onClick={() => toggleFavorite(listArticle)}
-                            className={`w-11 h-11 inline-flex items-center justify-center rounded-full transition-colors ${
-                                article.is_favorite ? 'text-earth' : 'text-paper-muted hover:text-earth'
-                            }`}
-                            aria-pressed={article.is_favorite}
-                            aria-label="Favori"
-                            title={article.is_favorite ? 'Retirer des favoris (s)' : 'Ajouter aux favoris (s)'}
+                            onClick={onClose}
+                            className="md:hidden inline-flex items-center gap-0.5 min-h-11 pl-1 pr-2.5 rounded-full text-nature text-base font-semibold max-w-[45%]"
                         >
-                            <svg className="w-5 h-5" fill={article.is_favorite ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.382-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                            </svg>
+                            <Icon name="chevronLeft" size={24} strokeWidth={2} />
+                            <span className="truncate">{backLabel}</span>
                         </button>
-                        <ShareButton article={article} className="w-11 h-11 inline-flex items-center justify-center rounded-full text-paper-muted hover:text-nature transition-colors" />
+                        <div className="hidden md:flex items-center">
+                            <button onClick={onPrev} disabled={!hasPrev || !onPrev} className="tool-btn !text-paper-white" aria-label="Article précédent" title="Article précédent (k)">
+                                <Icon name="chevronUp" size={20} strokeWidth={2} />
+                            </button>
+                            <button onClick={onNext} disabled={!onNext} className="tool-btn !text-paper-white" aria-label="Article suivant" title="Article suivant (j)">
+                                <Icon name="chevronDown" size={20} strokeWidth={2} />
+                            </button>
+                        </div>
+                        <span className="flex-1 min-w-0 text-center md:text-left md:pl-2 text-xs text-paper-muted tabular-nums truncate">{position}</span>
+
                         <div className="relative">
                             <button
                                 onClick={() => setSettingsOpen((o) => !o)}
-                                className="w-11 h-11 inline-flex items-center justify-center rounded-full text-paper-muted hover:text-nature font-serif text-base transition-colors"
+                                className="tool-btn !text-paper-white font-serif !text-lg font-semibold"
                                 aria-expanded={settingsOpen}
-                                aria-label="Affichage du texte"
-                                title="Affichage du texte"
+                                aria-label="Réglages de lecture"
+                                title="Taille, police, thème"
                             >
                                 Aa
                             </button>
                             {settingsOpen && <ReaderSettings onClose={() => setSettingsOpen(false)} />}
                         </div>
-                        <button
-                            onClick={onClose}
-                            className="ml-1 w-11 h-11 inline-flex items-center justify-center rounded-full bg-carbon-dark text-paper-white hover:bg-nature hover:text-on-nature transition-colors"
-                            aria-label="Fermer"
-                            title="Fermer (Échap)"
-                        >
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
+                        <div className="hidden md:flex items-center gap-0.5">
+                            {favButton('tool-btn !text-paper-white', 19)}
+                            <ShareButton article={article} className="tool-btn !text-paper-white" />
+                            {listArticle.url && (
+                                <a
+                                    href={listArticle.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    title="Ouvrir l’original (v)"
+                                    className="ml-1.5 hidden lg:inline-flex items-center gap-2 min-h-10 px-3.5 rounded-full border border-line text-[13px] font-semibold text-paper-white hover:border-nature/50 transition-colors"
+                                >
+                                    Ouvrir l’original
+                                    <Icon name="external" size={15} strokeWidth={1.9} />
+                                </a>
+                            )}
+                            <button onClick={onClose} className="tool-btn ml-1" aria-label="Fermer l’article" title="Fermer (Échap)">
+                                <Icon name="close" size={20} strokeWidth={2} />
+                            </button>
+                        </div>
                     </div>
-                    <div className="h-0.5 bg-transparent">
+                    <div className="h-0.5">
                         <div ref={progressRef} className="h-full bg-nature origin-left" style={{ transform: 'scaleX(0)' }} aria-hidden="true" />
                     </div>
                 </div>
 
-                {listArticle.image_url && (
-                    <img
-                        src={listArticle.image_url}
-                        alt=""
-                        fetchPriority="high"
-                        decoding="async"
-                        referrerPolicy="no-referrer"
-                        className="w-full max-h-[42vh] object-cover bg-carbon-dark"
-                        onError={(e) => (e.currentTarget.style.display = 'none')}
-                    />
-                )}
-
-                <div className="px-5 sm:px-10 pb-10 mx-auto" style={{ maxWidth: `calc(${MEASURES[width]} + 5rem)` }}>
-                    <header className="pt-8 pb-6">
+                <div className="w-full px-5 md:px-8 pt-6 md:pt-10 pb-10 mx-auto" style={{ maxWidth: `calc(${MEASURES[width]} + 4rem)` }}>
+                    <header>
+                        <p className="flex items-center gap-2 flex-wrap text-[13px] text-paper-muted">
+                            <FeedAvatar id={listArticle.feed_id} title={listArticle.feed_title} />
+                            <span className="font-semibold text-nature">{listArticle.feed_title || 'Article'}</span>
+                            <span aria-hidden="true">·</span>
+                            <time dateTime={date}>{formatLong(date)}</time>
+                            <span aria-hidden="true">·</span>
+                            <span>{readingTimeLabel(listArticle.reading_time)} de lecture</span>
+                        </p>
                         <h1
                             id="reader-title"
                             ref={titleRef}
                             tabIndex={-1}
-                            className="font-serif text-paper-white leading-[1.15] tracking-tight text-balance outline-none"
-                            style={{ fontSize: 'clamp(1.75rem, 1.3rem + 1.8vw, 2.6rem)' }}
+                            className="mt-3.5 font-semibold text-paper-white leading-[1.13] tracking-[-0.015em] text-balance outline-none"
+                            style={{ fontSize: 'clamp(1.8rem, 1.4rem + 1.4vw, 2.5rem)' }}
                         >
                             {listArticle.title}
                         </h1>
-                        {listArticle.author && <p className="mt-3 text-paper-muted text-sm">Par {listArticle.author}</p>}
+                        {listArticle.author && <p className="mt-2.5 text-paper-muted text-sm">Par {listArticle.author}</p>}
 
-                        {article.ai_summary ? (
-                            <aside className="mt-6 bg-nature/8 border-l-4 border-nature p-5 rounded-r-xl" aria-label="Résumé">
-                                <p className="text-paper-white/90 leading-relaxed font-reading">{article.ai_summary}</p>
-                            </aside>
-                        ) : (
-                            <div className="mt-5">
-                                <button
-                                    onClick={summarize}
-                                    disabled={summarizing}
-                                    className="inline-flex items-center gap-2 text-sm font-medium text-nature hover:underline disabled:opacity-60"
-                                >
-                                    {summarizing && (
-                                        <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" aria-hidden="true" />
-                                    )}
-                                    {summarizing ? 'Résumé en cours…' : 'Résumer cet article'}
-                                </button>
-                                {summaryError && <p role="alert" className="mt-2 text-sm text-danger">{summaryError}</p>}
-                            </div>
-                        )}
+                        <AiSummary articleId={listArticle.id} summary={article.ai_summary} />
                     </header>
 
-                    {detail ? (
-                        html ? (
-                            <div className="magazine-content" dangerouslySetInnerHTML={{ __html: html }} />
-                        ) : (
-                            <p className="text-paper-muted italic">Ce flux ne publie que le titre de l’article.</p>
-                        )
-                    ) : isError ? (
-                        <p role="alert" className="text-paper-muted">
-                            Impossible de charger l’article.{' '}
-                            <button className="text-nature underline" onClick={() => refetch()}>Réessayer</button>
-                        </p>
-                    ) : (
-                        <div className="space-y-4" aria-busy="true" aria-label="Chargement de l'article">
-                            {[92, 100, 85, 97, 60].map((w, i) => (
-                                <div key={i} className="h-4 rounded bg-carbon-dark animate-pulse" style={{ width: `${w}%` }} />
-                            ))}
-                        </div>
+                    {showImage && (
+                        <img
+                            src={listArticle.image_url}
+                            alt=""
+                            fetchPriority="high"
+                            decoding="async"
+                            referrerPolicy="no-referrer"
+                            className="mt-7 w-full max-h-[48vh] object-cover rounded-2xl bg-carbon-dark"
+                            onError={() => setImgFailed(true)}
+                        />
                     )}
+
+                    <div className="mt-7">
+                        {detail ? (
+                            html ? (
+                                <div className="magazine-content" dangerouslySetInnerHTML={{ __html: html }} />
+                            ) : (
+                                <p className="text-paper-muted">Ce flux ne publie que le titre de l’article.</p>
+                            )
+                        ) : isError ? (
+                            <p role="alert" className="text-paper-muted">
+                                Impossible de charger l’article.{' '}
+                                <button className="text-nature underline" onClick={() => refetch()}>Réessayer</button>
+                            </p>
+                        ) : (
+                            <div className="space-y-4" aria-busy="true" aria-label="Chargement de l'article">
+                                {[92, 100, 85, 97, 60].map((w, i) => (
+                                    <div key={i} className="h-4 rounded bg-carbon-dark animate-pulse" style={{ width: `${w}%` }} />
+                                ))}
+                            </div>
+                        )}
+                    </div>
 
                     {listArticle.url && (
                         <a
@@ -373,42 +374,52 @@ export function Reader({ article: listArticle, next, hasPrev, onClose, onNext, o
                             className="mt-10 inline-flex items-center gap-2 text-sm font-semibold text-nature hover:underline"
                         >
                             Lire sur le site d’origine
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                            </svg>
+                            <Icon name="external" size={16} />
                         </a>
                     )}
-                </div>
 
-                {/* Bottom navigation: always visible on mobile, "up next" on every size */}
-                <nav className="sticky bottom-0 z-20 border-t border-paper-muted/10 bg-carbon-light/95 backdrop-blur" aria-label="Navigation entre articles">
-                    <div className="flex items-stretch">
-                        <button
-                            onClick={onPrev}
-                            disabled={!hasPrev || !onPrev}
-                            className="flex items-center gap-2 px-4 sm:px-6 min-h-14 text-sm font-medium text-paper-muted hover:text-nature disabled:opacity-35 disabled:pointer-events-none"
-                        >
-                            <Chevron dir="left" />
-                            <span className="hidden sm:inline">Précédent</span>
-                        </button>
+                    {/* Up next (desktop / tablet) */}
+                    <div className="hidden md:block mt-12 pt-5 border-t border-line">
                         <button
                             onClick={onNext}
                             disabled={!onNext}
-                            className="flex-1 min-w-0 flex items-center justify-end gap-3 px-4 sm:px-6 min-h-14 text-right hover:text-nature disabled:opacity-35 disabled:pointer-events-none group"
+                            className="w-full flex items-center gap-4 text-left px-[18px] py-4 rounded-2xl border border-line bg-carbon hover:border-nature/40 transition-colors disabled:opacity-60 disabled:pointer-events-none"
                         >
-                            <span className="min-w-0">
-                                <span className="block text-xs text-paper-muted">Article suivant</span>
-                                <span className="block text-sm font-semibold text-paper-white group-hover:text-nature truncate">
-                                    {next ? next.title : onNext ? 'Charger la suite' : 'Fin de la liste'}
+                            <span className="flex-1 min-w-0">
+                                <span className="block text-xs font-semibold text-paper-muted">Article suivant · j</span>
+                                <span className="block mt-1 font-serif text-lg font-semibold leading-snug text-paper-white truncate">
+                                    {next ? next.title : onNext ? 'Charger la suite' : 'Vous êtes à jour — plus rien à lire ici.'}
                                 </span>
                             </span>
-                            <Chevron dir="right" />
+                            <Icon name="arrowRight" size={20} strokeWidth={2} className="text-nature shrink-0" />
                         </button>
                     </div>
+                </div>
+
+                {/* Bottom action bar (phones) */}
+                <nav
+                    aria-label="Actions sur l’article"
+                    className="md:hidden mt-auto sticky bottom-0 z-20 flex items-center gap-1 px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] bg-carbon-light/95 backdrop-blur border-t border-line"
+                >
+                    {favButton('tool-btn !w-12 !h-12 !text-paper-white', 24)}
+                    <ShareButton article={article} className="tool-btn !w-12 !h-12 !text-paper-white" iconSize={23} menuAbove />
+                    {listArticle.url && (
+                        <button onClick={openOriginal} className="tool-btn !w-12 !h-12 !text-paper-white" aria-label="Ouvrir l’original">
+                            <Icon name="external" size={22} />
+                        </button>
+                    )}
+                    <span className="flex-1" />
+                    <button
+                        onClick={onNext ?? onClose}
+                        className="inline-flex items-center gap-2 min-h-12 pl-5 pr-4 rounded-full bg-nature text-on-nature text-[15px] font-semibold active:scale-[0.97] transition-transform"
+                    >
+                        {onNext ? 'Suivant' : 'Terminé'}
+                        <Icon name={onNext ? 'arrowRight' : 'check'} size={18} strokeWidth={2.2} />
+                    </button>
                 </nav>
             </article>
         </div>
     );
 
-    return createPortal(body, document.body);
+    return overlay ? createPortal(body, document.body) : body;
 }

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
     usePrefs,
     FONT_SIZE_MAX,
@@ -7,6 +8,7 @@ import {
     type ReaderWidth,
     type ThemePref,
 } from '../../stores/prefsStore';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 interface ReaderSettingsProps {
     onClose: () => void;
@@ -14,9 +16,9 @@ interface ReaderSettingsProps {
 
 const THEMES: { value: ThemePref; label: string; swatch: string }[] = [
     { value: 'light', label: 'Clair', swatch: '#FFFFFF' },
-    { value: 'sepia', label: 'Sépia', swatch: '#F4ECD8' },
-    { value: 'dark', label: 'Sombre', swatch: '#161D17' },
-    { value: 'system', label: 'Auto', swatch: 'linear-gradient(135deg,#fff 50%,#161D17 50%)' },
+    { value: 'sepia', label: 'Sépia', swatch: '#F1E7D0' },
+    { value: 'dark', label: 'Sombre', swatch: '#161B18' },
+    { value: 'system', label: 'Auto', swatch: 'linear-gradient(135deg,#fff 50%,#161B18 50%)' },
 ];
 
 const FONTS: { value: ReaderFont; label: string; family: string }[] = [
@@ -37,10 +39,14 @@ const LEADINGS = [
     { value: 1.85, label: 'Aéré' },
 ];
 
-/** "Aa" popover: theme, font, size, line height and line length. */
+/**
+ * "Aa" panel: theme, font, size, line height and line length. A popover on
+ * larger screens, a bottom sheet on phones; the text behind updates live.
+ */
 export function ReaderSettings({ onClose }: ReaderSettingsProps) {
     const prefs = usePrefs();
     const panelRef = useRef<HTMLDivElement>(null);
+    const isMobile = useIsMobile();
 
     useEffect(() => {
         panelRef.current?.focus();
@@ -54,7 +60,9 @@ export function ReaderSettings({ onClose }: ReaderSettingsProps) {
         return () => window.removeEventListener('keydown', onKey, true);
     }, [onClose]);
 
-    return (
+    // The sheet is portalled: the reader toolbar's backdrop blur would
+    // otherwise become the containing block of its fixed position.
+    const panel = (
         <>
             <div className="fixed inset-0 z-[60]" onClick={onClose} aria-hidden="true" />
             <div
@@ -62,8 +70,21 @@ export function ReaderSettings({ onClose }: ReaderSettingsProps) {
                 tabIndex={-1}
                 role="dialog"
                 aria-label="Réglages de lecture"
-                className="absolute right-0 top-14 z-[61] w-[min(22rem,calc(100vw-2rem))] surface-card p-5 space-y-5 animate-fade-in text-paper-white"
+                className={
+                    isMobile
+                        ? 'fixed inset-x-0 bottom-0 z-[61] max-h-[85dvh] overflow-y-auto rounded-t-3xl bg-carbon-light border-t border-line px-5 pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom))] space-y-4 shadow-[0_-16px_40px_-16px_rgba(0,0,0,0.45)] animate-rise text-paper-white outline-none'
+                        : 'absolute right-0 top-14 z-[61] w-[min(22rem,calc(100vw-2rem))] surface-card p-5 space-y-5 animate-fade-in text-paper-white outline-none'
+                }
             >
+                {isMobile && (
+                    <>
+                        <div className="mx-auto h-[5px] w-10 rounded-full bg-line" aria-hidden="true" />
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-[22px] font-semibold">Affichage</h2>
+                            <button onClick={onClose} className="min-h-11 px-4 rounded-full bg-carbon-dark text-[15px] font-semibold">Terminé</button>
+                        </div>
+                    </>
+                )}
                 <fieldset>
                     <legend className="eyebrow text-paper-muted mb-2">Thème</legend>
                     <div className="grid grid-cols-4 gap-2">
@@ -158,4 +179,5 @@ export function ReaderSettings({ onClose }: ReaderSettingsProps) {
             </div>
         </>
     );
+    return isMobile ? createPortal(panel, document.body) : panel;
 }

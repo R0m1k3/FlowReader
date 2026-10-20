@@ -4,6 +4,7 @@ import type { Article } from '../../api/articles';
 import { useArticleActions } from '../../hooks/useArticleActions';
 import { FocusCard } from './FocusCard';
 import { Reader } from '../reader/Reader';
+import { Icon } from '../Icon';
 
 interface FocusCardStackProps {
     articles: Article[];
@@ -59,7 +60,7 @@ function SwipeableCard({ article, index, isTop, onAction }: SwipeableCardProps) 
                     </motion.div>
                     <motion.div style={{ opacity: opacityKeep }} className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none rounded-3xl bg-earth/15">
                         <div className="border-4 border-earth text-earth font-black text-3xl uppercase tracking-widest px-4 py-2 rounded-lg rotate-12 bg-carbon-light/80">
-                            Garder
+                            Plus tard
                         </div>
                     </motion.div>
                 </>
@@ -141,15 +142,24 @@ export function FocusCardStack({ articles, onEmpty, onExit }: FocusCardStackProp
     if (!top) return null;
 
     return (
-        <div className="relative w-full h-full flex flex-col items-center justify-center gap-6">
+        <div className="relative w-full h-full flex flex-col items-center justify-center gap-5">
             <p className="sr-only" aria-live="polite">{announce}</p>
 
-            <span className="inline-block bg-nature-dark/80 px-4 py-2 rounded-full text-white text-xs font-semibold">
-                {articles.length - currentIndex} restant{articles.length - currentIndex > 1 ? 's' : ''}
-            </span>
+            {/* Progress through the deck */}
+            <div className="w-full max-w-md flex flex-col items-center gap-2">
+                <p className="text-xs text-paper-muted tabular-nums">
+                    {currentIndex + 1} sur {articles.length}
+                </p>
+                <div className="w-full h-1 rounded-full bg-line overflow-hidden" aria-hidden="true">
+                    <div
+                        className="h-full rounded-full bg-nature transition-[width] duration-300"
+                        style={{ width: `${Math.round((currentIndex / articles.length) * 100)}%` }}
+                    />
+                </div>
+            </div>
 
             {/* Stack */}
-            <div className="relative w-full max-w-md flex-1 max-h-[560px] min-h-[340px] mb-8">
+            <div className="relative w-full max-w-md flex-1 max-h-[580px] min-h-[340px] mb-9">
                 <AnimatePresence mode="popLayout" initial={false}>
                     {visible.map((article, i) => (
                         <SwipeableCard key={article.id} article={article} index={i} isTop={i === 0} onAction={act} />
@@ -157,44 +167,48 @@ export function FocusCardStack({ articles, onEmpty, onExit }: FocusCardStackProp
                 </AnimatePresence>
             </div>
 
-            {/* Controls (every gesture has a button equivalent) */}
-            <div className="flex justify-center items-center gap-3 sm:gap-5 pb-4">
+            {/* Controls (every gesture has a labelled button equivalent) */}
+            <div className="flex justify-center items-start gap-5 pb-[max(1rem,env(safe-area-inset-bottom))]">
                 <button
                     onClick={() => act('keep')}
-                    className="w-14 h-14 rounded-full bg-carbon-light border border-earth/30 text-earth shadow-lg hover:bg-earth hover:text-on-earth transition-colors flex items-center justify-center"
+                    className="flex flex-col items-center gap-1.5 text-xs font-semibold text-earth"
                     title="Garder pour plus tard (←)"
-                    aria-label="Garder pour plus tard"
                 >
-                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-                    </svg>
+                    <span className="w-[60px] h-[60px] rounded-full border-2 border-earth flex items-center justify-center hover:bg-earth hover:text-on-earth transition-colors">
+                        <Icon name="clock" size={26} strokeWidth={2} />
+                    </span>
+                    Plus tard
                 </button>
-
                 <button
                     onClick={undo}
                     disabled={currentIndex === 0}
-                    className="icon-btn bg-carbon-light shadow"
+                    className="pt-1.5 flex flex-col items-center gap-1.5 text-xs font-semibold text-paper-muted disabled:opacity-40"
                     title="Annuler (u)"
-                    aria-label="Annuler la dernière action"
                 >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                    </svg>
+                    <span className="w-12 h-12 rounded-full border border-line bg-carbon-light text-paper-white flex items-center justify-center">
+                        <Icon name="undo" size={20} strokeWidth={2} />
+                    </span>
+                    Annuler
                 </button>
-
-                <button onClick={() => setReading(true)} className="btn-secondary bg-carbon-light" title="Lire l’article (Entrée)">
+                <button
+                    onClick={() => setReading(true)}
+                    className="pt-1.5 flex flex-col items-center gap-1.5 text-xs font-semibold text-paper-muted"
+                    title="Lire l’article (Entrée)"
+                >
+                    <span className="w-12 h-12 rounded-full border border-line bg-carbon-light text-paper-white flex items-center justify-center">
+                        <Icon name="book" size={20} strokeWidth={1.9} />
+                    </span>
                     Lire
                 </button>
-
                 <button
                     onClick={() => act('read')}
-                    className="w-14 h-14 rounded-full bg-nature text-on-nature shadow-lg hover:bg-nature-light transition-colors flex items-center justify-center"
+                    className="flex flex-col items-center gap-1.5 text-xs font-semibold text-nature"
                     title="Marquer comme lu (→)"
-                    aria-label="Marquer comme lu"
                 >
-                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
+                    <span className="w-[60px] h-[60px] rounded-full bg-nature text-on-nature flex items-center justify-center hover:bg-nature-light transition-colors">
+                        <Icon name="check" size={28} strokeWidth={2.4} />
+                    </span>
+                    Lu
                 </button>
             </div>
 
@@ -204,6 +218,7 @@ export function FocusCardStack({ articles, onEmpty, onExit }: FocusCardStackProp
                     article={top}
                     next={articles[currentIndex + 1]}
                     hasPrev={false}
+                    backLabel="Mode Focus"
                     onClose={() => setReading(false)}
                     onNext={() => {
                         act('read');

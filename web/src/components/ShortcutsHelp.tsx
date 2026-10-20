@@ -11,6 +11,7 @@ const GROUPS: { title: string; keys: [string, string][] }[] = [
             ['v', 'Ouvrir l’original'],
             ['u', 'Basculer Non lus / Tous'],
             ['r', 'Actualiser les flux'],
+            ['/ · ⌘K', 'Rechercher'],
         ],
     },
     {
@@ -50,7 +51,7 @@ export function ShortcutsHelp({ onClose }: { onClose: () => void }) {
                 className="surface-card w-full max-w-lg p-7 outline-none animate-rise"
                 onClick={(e) => e.stopPropagation()}
             >
-                <h2 id="shortcuts-title" className="text-2xl font-serif text-paper-white mb-5">Raccourcis clavier</h2>
+                <h2 id="shortcuts-title" className="text-2xl font-semibold text-paper-white mb-5">Raccourcis clavier</h2>
                 <div className="grid sm:grid-cols-2 gap-6">
                     {GROUPS.map((g) => (
                         <section key={g.title}>

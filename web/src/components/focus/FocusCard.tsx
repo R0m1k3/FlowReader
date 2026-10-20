@@ -1,5 +1,6 @@
 import type { Article } from '../../api/articles';
 import { formatRelative, readingTimeLabel } from '../../lib/format';
+import { summaryText } from '../../lib/summary';
 
 interface FocusCardProps {
     article: Article;
@@ -10,9 +11,9 @@ export function FocusCard({ article, isTop = false }: FocusCardProps) {
     const date = article.published_at || article.created_at;
 
     return (
-        <article className="w-full h-full bg-carbon-light rounded-3xl overflow-hidden flex flex-col relative select-none">
+        <article className="w-full h-full bg-carbon-light border border-line rounded-[26px] overflow-hidden flex flex-col relative select-none">
             {/* Cover */}
-            <div className="h-[52%] relative overflow-hidden bg-carbon-dark shrink-0">
+            <div className="h-[44%] relative overflow-hidden bg-carbon-dark shrink-0">
                 {article.image_url ? (
                     <img
                         src={article.image_url}
@@ -24,8 +25,8 @@ export function FocusCard({ article, isTop = false }: FocusCardProps) {
                         onError={(e) => (e.currentTarget.style.display = 'none')}
                     />
                 ) : (
-                    <div className="w-full h-full bg-nature/12 p-8 flex items-end">
-                        <span className="text-2xl font-serif italic text-nature leading-tight line-clamp-3">{article.feed_title}</span>
+                    <div className="w-full h-full bg-nature-soft p-8 flex items-end">
+                        <span className="text-2xl font-serif font-semibold text-nature leading-tight line-clamp-3">{article.feed_title}</span>
                     </div>
                 )}
                 <span className="absolute top-4 right-4 bg-black/55 text-white text-xs font-semibold px-3 py-1.5 rounded-full">
@@ -43,19 +44,19 @@ export function FocusCard({ article, isTop = false }: FocusCardProps) {
                     <time dateTime={date} className="shrink-0">{formatRelative(date)}</time>
                 </div>
 
-                <h2 className="text-xl sm:text-2xl font-serif text-paper-white leading-tight mb-3 line-clamp-3 text-balance">
+                <h2 className="text-2xl font-semibold text-paper-white leading-[1.15] tracking-[-0.01em] mb-3 line-clamp-3 text-balance">
                     {article.title}
                 </h2>
 
                 {(article.ai_summary || article.excerpt) && (
-                    <p className="text-paper-muted text-sm leading-relaxed line-clamp-3 font-reading">
-                        {article.ai_summary || article.excerpt}
+                    <p className="text-paper-muted text-base leading-normal line-clamp-4 font-reading">
+                        {article.ai_summary ? summaryText(article.ai_summary) : article.excerpt}
                     </p>
                 )}
 
                 {isTop && (
-                    <p className="mt-auto pt-3 text-center text-xs text-paper-muted hidden sm:block">
-                        ← Garder · Lu → · Entrée pour lire
+                    <p className="mt-auto pt-3 text-center text-xs text-paper-muted">
+                        ← Plus tard · Lu → · Entrée pour lire
                     </p>
                 )}
             </div>

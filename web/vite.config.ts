@@ -17,8 +17,8 @@ export default defineConfig({
         short_name: 'FlowReader',
         description: 'Lecteur RSS minimaliste et rapide',
         lang: 'fr',
-        theme_color: '#15643A',
-        background_color: '#F7F4EC',
+        theme_color: '#1B6B43',
+        background_color: '#F6F4EE',
         display: 'standalone',
         start_url: '/',
         icons: [
