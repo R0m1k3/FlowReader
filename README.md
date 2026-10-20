@@ -110,8 +110,13 @@ les comptes, sessions, flux et articles existants sont conservés.
 
 ### Lecture
 
+- Bureau (≥ 1280 px) : trois panneaux — flux, liste, lecteur. Tablette : liste et lecteur côte à côte,
+  les flux dans un tiroir. Téléphone : une colonne avec une barre d'onglets (À lire, Focus, Favoris, Flux)
+  et des gestes sur les articles (glisser → lu, glisser ← favori).
+- Vue **liste** (vignettes carrées) ou **magazine** (grandes cartes), au choix.
+- Recherche dans les titres et le texte des articles : `⌘K` / `Ctrl+K` ou `/`.
 - Raccourcis clavier : `j`/`k` naviguer, `o` ouvrir, `m` lu/non lu, `s` favori, `v` original,
-  `/` rechercher, `u` non lus/tous, `r` actualiser, `Espace` page suivante puis article suivant,
+  `/` ou `⌘K` rechercher, `u` non lus/tous, `r` actualiser, `Espace` page suivante puis article suivant,
   `?` aide.
 - Bouton **Aa** dans le lecteur : thème (clair, sépia, sombre, auto), police (serif, sans,
   Atkinson Hyperlegible), taille, interligne et largeur de colonne.

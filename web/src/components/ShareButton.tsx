@@ -1,12 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Article } from '../api/articles';
+import { Icon } from './Icon';
 
 interface ShareButtonProps {
     article: Pick<Article, 'title' | 'url' | 'excerpt'>;
     className?: string;
+    iconSize?: number;
+    /** Open the fallback menu upwards (button in a bottom bar). */
+    menuAbove?: boolean;
 }
 
-export function ShareButton({ article, className = 'icon-btn' }: ShareButtonProps) {
+export function ShareButton({ article, className = 'icon-btn', iconSize = 18, menuAbove = false }: ShareButtonProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [copied, setCopied] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
@@ -71,9 +75,7 @@ export function ShareButton({ article, className = 'icon-btn' }: ShareButtonProp
                 aria-haspopup="menu"
                 aria-expanded={isOpen}
             >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                </svg>
+                <Icon name="share" size={iconSize} />
             </button>
             {copied && (
                 <span role="status" className="absolute -top-9 left-1/2 -translate-x-1/2 chip whitespace-nowrap">Lien copié</span>
@@ -85,23 +87,23 @@ export function ShareButton({ article, className = 'icon-btn' }: ShareButtonProp
                     <div
                         ref={menuRef}
                         role="menu"
-                        className="absolute right-0 top-12 w-52 surface-card z-50 py-1 text-sm animate-fade-in"
+                        className={`absolute w-52 surface-card z-50 py-1 text-sm animate-fade-in ${menuAbove ? 'left-0 bottom-14' : 'right-0 top-12'}`}
                     >
                         {items.map((it) => (
                             <button
                                 key={it.label}
                                 role="menuitem"
                                 onClick={() => openLink(it.href)}
-                                className="w-full text-left px-4 py-2.5 min-h-11 text-paper-white hover:bg-nature/10 focus-visible:bg-nature/10"
+                                className="w-full text-left px-4 py-2.5 min-h-11 text-paper-white hover:bg-carbon-dark focus-visible:bg-carbon-dark"
                             >
                                 {it.label}
                             </button>
                         ))}
-                        <div className="border-t border-paper-muted/15 my-1" />
+                        <div className="border-t border-line my-1" />
                         <button
                             role="menuitem"
                             onClick={copyToClipboard}
-                            className="w-full text-left px-4 py-2.5 min-h-11 text-paper-white hover:bg-nature/10 focus-visible:bg-nature/10"
+                            className="w-full text-left px-4 py-2.5 min-h-11 text-paper-white hover:bg-carbon-dark focus-visible:bg-carbon-dark"
                         >
                             Copier le lien
                         </button>

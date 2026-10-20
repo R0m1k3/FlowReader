@@ -16,20 +16,13 @@ export function AuthShell({ eyebrow, title, subtitle, children }: AuthShellProps
         <div className="min-h-screen flex">
             {/* Brand panel */}
             <aside className="hidden lg:flex w-[45%] relative overflow-hidden bg-nature-dark text-white flex-col justify-between p-14">
-                <div
-                    className="absolute inset-0 opacity-30 pointer-events-none"
-                    style={{
-                        backgroundImage:
-                            'radial-gradient(circle at 20% 20%, rgba(52,210,123,0.35), transparent 45%), radial-gradient(circle at 80% 80%, rgba(180,91,62,0.25), transparent 45%)',
-                    }}
-                />
                 <motion.div
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6 }}
                     className="relative z-10"
                 >
-                    <span className="text-nature-light text-5xl font-serif italic">F.</span>
+                    <span aria-hidden="true" className="w-14 h-14 rounded-2xl bg-nature text-on-nature flex items-center justify-center font-serif font-bold text-[34px] leading-none">F</span>
                 </motion.div>
 
                 <motion.div
@@ -38,7 +31,7 @@ export function AuthShell({ eyebrow, title, subtitle, children }: AuthShellProps
                     transition={{ duration: 0.7, delay: 0.1 }}
                     className="relative z-10 space-y-6"
                 >
-                    <h2 className="text-5xl font-serif italic leading-[1.1] text-balance text-white">
+                    <h2 className="text-5xl font-semibold leading-[1.08] tracking-[-0.02em] text-balance text-white">
                         Le calme dans le chaos de l'information.
                     </h2>
                     <p className="text-white/70 font-reading text-lg max-w-sm leading-relaxed">
@@ -52,21 +45,21 @@ export function AuthShell({ eyebrow, title, subtitle, children }: AuthShellProps
             </aside>
 
             {/* Form side */}
-            <main className="flex-1 flex items-center justify-center p-6">
+            <main className="flex-1 flex items-start sm:items-center justify-center px-6 pt-[max(2.5rem,env(safe-area-inset-top))] pb-10 sm:p-6">
                 <motion.div
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
                     className="w-full max-w-md"
                 >
-                    <div className="lg:hidden text-center mb-8">
-                        <span className="text-nature text-4xl font-serif italic">FlowReader</span>
+                    <div className="lg:hidden mb-6">
+                        <span aria-hidden="true" className="inline-flex w-[52px] h-[52px] rounded-[15px] bg-nature text-on-nature items-center justify-center font-serif font-bold text-[31px] leading-none">F</span>
                     </div>
 
-                    <div className="surface-card p-8 sm:p-10">
+                    <div>
                         <header className="mb-8">
                             <p className="eyebrow mb-2">{eyebrow}</p>
-                            <h1 className="text-4xl font-serif italic text-paper-white mb-2">{title}</h1>
+                            <h1 className="text-[34px] font-semibold leading-[1.08] tracking-[-0.02em] text-paper-white mb-2">{title}</h1>
                             <p className="text-paper-muted text-sm">{subtitle}</p>
                         </header>
                         {children}

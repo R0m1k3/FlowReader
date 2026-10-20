@@ -4,10 +4,8 @@ import { registerSW } from 'virtual:pwa-register'
 // Self-hosted variable fonts: no third-party request, cached offline by the SW.
 // Browsers only download the unicode-range subsets a page actually uses.
 import '@fontsource-variable/inter/wght.css'
-import '@fontsource-variable/lora/wght.css'
-import '@fontsource-variable/lora/wght-italic.css'
-import '@fontsource-variable/playfair-display/wght.css'
-import '@fontsource-variable/playfair-display/wght-italic.css'
+import '@fontsource-variable/newsreader/wght.css'
+import '@fontsource-variable/newsreader/wght-italic.css'
 import '@fontsource/atkinson-hyperlegible/latin-400.css'
 import '@fontsource/atkinson-hyperlegible/latin-700.css'
 import './index.css'

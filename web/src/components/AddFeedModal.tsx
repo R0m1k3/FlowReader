@@ -51,15 +51,15 @@ export function AddFeedModal({ onClose }: AddFeedModalProps) {
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-nature-dark/60 animate-fade-in"
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-nature-dark/50 animate-fade-in"
             onClick={onClose}
             role="dialog"
             aria-modal="true"
             aria-labelledby="add-feed-title"
         >
-            <div className="w-full max-w-md surface-card p-6 sm:p-8 animate-rise" onClick={(e) => e.stopPropagation()}>
+            <div className="w-full sm:max-w-md surface-card !rounded-b-none sm:!rounded-2xl p-6 sm:p-8 pb-[max(1.5rem,env(safe-area-inset-bottom))] animate-rise" onClick={(e) => e.stopPropagation()}>
                 <div className="flex justify-between items-center mb-2">
-                    <h2 id="add-feed-title" className="text-2xl font-serif italic text-nature">Nouveau flux</h2>
+                    <h2 id="add-feed-title" className="text-2xl font-semibold text-paper-white">Ajouter un flux</h2>
                     <button onClick={onClose} className="icon-btn" aria-label="Fermer">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />

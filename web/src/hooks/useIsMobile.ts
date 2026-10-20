@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 
-const query = '(max-width: 768px)';
+// Matches Tailwind's md breakpoint (768px): below it is the phone layout.
+const query = '(max-width: 767.98px)';
 
 function subscribe(cb: () => void) {
     const media = window.matchMedia(query);
